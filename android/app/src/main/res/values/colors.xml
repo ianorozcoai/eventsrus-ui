@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Used as the native launch screen background
+         (drawable/launch_background.xml) so it matches the Flutter-level
+         SplashScreen that takes over right after - both now white, to suit
+         logo-login.svg's dark text/colored icon (it's designed for a light
+         background, same as every other place it's used on web). -->
+    <color name="launch_background">#FFFFFF</color>
+</resources>

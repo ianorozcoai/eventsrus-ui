@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "590594963033",
+    "project_id": "eventsrus-507816",
+    "storage_bucket": "eventsrus-507816.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:590594963033:android:fdb3875fd2d50dd3ce6348",
+        "android_client_info": {
+          "package_name": "com.eventsrus.eventsrus_ui"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "590594963033-29a013v91o79jnf72pkcdnvf6ue3egej.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNzY28i24-9ocXAoPteQbszpzMiLoZTnA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "590594963033-29a013v91o79jnf72pkcdnvf6ue3egej.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
