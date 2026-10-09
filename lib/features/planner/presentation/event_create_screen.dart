@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../data/event_api.dart';
 import '../data/models/planner_event.dart';
 import '../data/models/planner_event_type.dart';
-import 'event_chat_mode_screen.dart';
+import 'planner_event_shell.dart';
 
 class EventCreateScreen extends StatefulWidget {
   const EventCreateScreen({super.key});
@@ -84,7 +84,7 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
       final saved = await context.read<EventApi>().saveEvent(_created!.id, name);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => EventChatModeScreen(eventId: saved.id)),
+        MaterialPageRoute(builder: (_) => PlannerEventShell(eventId: saved.id)),
       );
     } catch (_) {
       if (!mounted) return;

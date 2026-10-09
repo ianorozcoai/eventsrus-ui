@@ -4,8 +4,8 @@ import 'package:provider/provider.dart';
 import '../data/event_api.dart';
 import '../data/models/planner_event.dart';
 import '../data/models/planner_event_type.dart';
-import 'event_chat_mode_screen.dart';
 import 'event_create_screen.dart';
+import 'planner_event_shell.dart';
 
 class EventsListScreen extends StatefulWidget {
   const EventsListScreen({super.key});
@@ -84,12 +84,18 @@ class _EventsListScreenState extends State<EventsListScreen> {
                           child: ListTile(
                             leading: const Icon(Icons.event_outlined),
                             title: Text(event.name ?? 'Untitled event'),
-                            subtitle: Text(event.eventType.label),
+                            subtitle: Text(
+                              event.eventType.label,
+                              style: TextStyle(
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             trailing: event.eventDate != null
                                 ? Text('${event.eventDate!.month}/${event.eventDate!.day}/${event.eventDate!.year}')
                                 : null,
                             onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => EventChatModeScreen(eventId: event.id)),
+                              MaterialPageRoute(builder: (_) => PlannerEventShell(eventId: event.id)),
                             ),
                           ),
                         );

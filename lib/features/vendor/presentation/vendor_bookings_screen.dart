@@ -58,97 +58,6 @@ class _VendorBookingsScreenState extends State<VendorBookingsScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _proposeBooking() async {
-    final eventIdController = TextEditingController();
-    final priceController = TextEditingController();
-    final agreementController = TextEditingController();
-    DateTime? eventDatetime;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('New Booking Proposal'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: eventIdController,
-                  decoration: const InputDecoration(labelText: 'Event ID'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: priceController,
-                  decoration: const InputDecoration(labelText: 'Price'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    eventDatetime == null
-                        ? 'Select event date & time'
-                        : eventDatetime.toString(),
-                  ),
-                  trailing: const Icon(Icons.calendar_today_outlined),
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: dialogContext,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 1095)),
-                    );
-                    if (date != null) {
-                      setDialogState(() => eventDatetime = date);
-                    }
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: agreementController,
-                  decoration: const InputDecoration(
-                    labelText: 'Agreement details',
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Send Proposal'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed != true) return;
-    final eventId = int.tryParse(eventIdController.text.trim());
-    if (eventId == null) return;
-
-    try {
-      await context.read<BookingApi>().propose(
-        eventId: eventId,
-        price: double.tryParse(priceController.text.trim()),
-        eventDatetime: eventDatetime,
-        agreementDetails: agreementController.text.trim().isEmpty
-            ? null
-            : agreementController.text.trim(),
-      );
-      await _load();
-    } catch (e) {
-      _showError(e);
-    }
-  }
-
   Future<void> _acknowledgePayment(Booking booking) async {
     final result = await FilePicker.platform.pickFiles(withData: true);
     if (result == null ||
@@ -409,11 +318,6 @@ class _VendorBookingsScreenState extends State<VendorBookingsScreen> {
       length: 3,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: _proposeBooking,
-          icon: const Icon(Icons.add),
-          label: const Text('New Proposal'),
-        ),
         body: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -462,13 +366,14 @@ class _VendorBookingsScreenState extends State<VendorBookingsScreen> {
               final busy = _busyId == booking.id;
               return Card(
                 child: ListTile(
-                  title: Text(booking.eventName ?? 'Event #${booking.eventId}'),
+                  title: Text(booking.plannerName ?? 'Planner'),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(booking.eventName ?? 'Event #${booking.eventId}'),
                       Text(
-                        '${booking.price != null ? formatPeso(booking.price!) : 'No price set'}'
-                        '${booking.eventDatetime != null ? ' • ${formatDate(booking.eventDatetime!)}' : ''}',
+                        '${booking.eventDatetime != null ? formatDate(booking.eventDatetime!) : 'No date set'}'
+                        ' • ${booking.price != null ? formatPeso(booking.price!) : 'No price set'}',
                       ),
                       if (booking.hasPendingAmendment)
                         const Text(

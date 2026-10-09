@@ -6,24 +6,8 @@ import '../../../app/theme.dart';
 import '../../../core/network/api_exception.dart';
 import '../../auth/data/models/business_type.dart';
 import '../../auth/state/auth_controller.dart';
-import '../data/models/legal_document_type.dart';
-import '../data/models/legal_document_upload.dart';
 import '../data/models/vendor_onboarding_request.dart';
 import '../data/vendor_api.dart';
-import 'widgets/image_upload_tile.dart';
-
-/// One business-registration document row in the onboarding form - the
-/// vendor can add any number of these (see _VendorOnboardingScreenState).
-class _LegalDocumentRow {
-  LegalDocumentType type;
-  final TextEditingController labelController;
-  PlatformFile? file;
-
-  _LegalDocumentRow({this.type = LegalDocumentType.dtiPermit})
-      : labelController = TextEditingController();
-
-  void dispose() => labelController.dispose();
-}
 
 class VendorOnboardingScreen extends StatefulWidget {
   const VendorOnboardingScreen({super.key});
@@ -40,13 +24,8 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
   final _descriptionController = TextEditingController();
   final _contactEmailController = TextEditingController();
   final _phoneNumberController = TextEditingController();
-  final _addressLine1Controller = TextEditingController();
-  final _addressLine2Controller = TextEditingController();
-  final _cityController = TextEditingController();
-  final _stateController = TextEditingController();
-  final _postalCodeController = TextEditingController();
-  final _countryController = TextEditingController();
   final _referralCodeController = TextEditingController();
+  final _promoCodeController = TextEditingController();
   final _facebookPageUrlController = TextEditingController();
 
   // Backend requires at least one business type (`@NotEmpty
@@ -54,11 +33,6 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
   final Set<BusinessType> _businessTypes = {};
   bool _acceptedTerms = false;
   PlatformFile? _logo;
-  PlatformFile? _idCard;
-  PlatformFile? _selfie;
-  // Starts empty - unlike ID Card/Selfie, business-registration documents
-  // are entirely optional and there can be any number of them.
-  final List<_LegalDocumentRow> _legalDocumentRows = [];
 
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -70,17 +44,9 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
     _descriptionController.dispose();
     _contactEmailController.dispose();
     _phoneNumberController.dispose();
-    _addressLine1Controller.dispose();
-    _addressLine2Controller.dispose();
-    _cityController.dispose();
-    _stateController.dispose();
-    _postalCodeController.dispose();
-    _countryController.dispose();
     _referralCodeController.dispose();
+    _promoCodeController.dispose();
     _facebookPageUrlController.dispose();
-    for (final row in _legalDocumentRows) {
-      row.dispose();
-    }
     super.dispose();
   }
 
@@ -108,34 +74,22 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
       description: _nullIfEmpty(_descriptionController.text),
       contactEmail: _nullIfEmpty(_contactEmailController.text),
       phoneNumber: _nullIfEmpty(_phoneNumberController.text),
-      addressLine1: _nullIfEmpty(_addressLine1Controller.text),
-      addressLine2: _nullIfEmpty(_addressLine2Controller.text),
-      city: _nullIfEmpty(_cityController.text),
-      state: _nullIfEmpty(_stateController.text),
-      postalCode: _nullIfEmpty(_postalCodeController.text),
-      country: _nullIfEmpty(_countryController.text),
       facebookPageUrl: _nullIfEmpty(_facebookPageUrlController.text),
       acceptedTerms: _acceptedTerms,
       referralCode: _nullIfEmpty(_referralCodeController.text),
+      promoCode: _nullIfEmpty(_promoCodeController.text),
     );
-
-    final legalDocuments = _legalDocumentRows
-        .where((row) => row.file != null)
-        .map((row) => LegalDocumentUpload(
-              type: row.type,
-              label: _nullIfEmpty(row.labelController.text),
-              file: row.file!,
-            ))
-        .toList();
 
     try {
       final vendorApi = context.read<VendorApi>();
+      // Address, ID/selfie verification, and legal documents moved out of
+      // onboarding to match web's simplified flow (onboarding.html hides
+      // them and defers to Account Settings post-signup) - vendors fill
+      // those in later via VendorSettingsScreen, which already supports all
+      // three.
       final response = await vendorApi.becomeVendor(
         request: request,
         logo: _logo,
-        idCard: _idCard,
-        selfie: _selfie,
-        legalDocuments: legalDocuments,
       );
       if (!mounted) return;
       await context.read<AuthController>().applyAuthResponse(response);
@@ -255,7 +209,7 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
                   const SizedBox(height: 20),
                   _SectionCard(
                     icon: Icons.card_giftcard_outlined,
-                    title: 'Referral (Optional)',
+                    title: 'Referral & Promo Codes (Optional)',
                     children: [
                       TextFormField(
                         controller: _referralCodeController,
@@ -264,6 +218,15 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
                           labelText: 'Referral Code',
                           helperText: 'Were you referred by another vendor? Enter their code here.',
                           prefixIcon: Icon(Icons.confirmation_number_outlined),
+                        ),
+                      ),
+                      TextFormField(
+                        controller: _promoCodeController,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: const InputDecoration(
+                          labelText: 'Promo Code',
+                          helperText: 'Have a promo code? It may grant a free trial with no card required.',
+                          prefixIcon: Icon(Icons.local_offer_outlined),
                         ),
                       ),
                     ],
@@ -317,165 +280,10 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  _SectionCard(
-                    icon: Icons.location_on_outlined,
-                    title: 'Address',
-                    children: [
-                      TextFormField(
-                        controller: _addressLine1Controller,
-                        decoration: const InputDecoration(
-                          labelText: 'Address Line 1',
-                        ),
-                      ),
-                      TextFormField(
-                        controller: _addressLine2Controller,
-                        decoration: const InputDecoration(
-                          labelText: 'Address Line 2',
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _cityController,
-                              decoration: const InputDecoration(
-                                labelText: 'City',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _stateController,
-                              decoration: const InputDecoration(
-                                labelText: 'State',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _postalCodeController,
-                              decoration: const InputDecoration(
-                                labelText: 'Postal Code',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: TextFormField(
-                              controller: _countryController,
-                              decoration: const InputDecoration(
-                                labelText: 'Country',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _SectionCard(
-                    icon: Icons.verified_user_outlined,
-                    title: 'Identity Verification',
-                    subtitle: 'Used to verify your business. Kept private.',
-                    children: [
-                      ImageUploadTile(
-                        label: 'ID Card',
-                        file: _idCard,
-                        onChanged: (file) => setState(() => _idCard = file),
-                      ),
-                      ImageUploadTile(
-                        label: 'Selfie',
-                        file: _selfie,
-                        onChanged: (file) => setState(() => _selfie = file),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  _SectionCard(
-                    icon: Icons.gavel_outlined,
-                    title: 'Business Legal Documents',
-                    subtitle: 'Optional - add as many as apply: DTI, SEC, '
-                        "Mayor's Permit, Barangay Clearance, BIR, etc. "
-                        'Shown to planners on your storefront.',
-                    children: [
-                      for (final row in _legalDocumentRows)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.outlineVariant,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: DropdownButtonFormField<LegalDocumentType>(
-                                        initialValue: row.type,
-                                        decoration: const InputDecoration(
-                                          labelText: 'Document Type',
-                                        ),
-                                        items: LegalDocumentType.values
-                                            .map(
-                                              (type) => DropdownMenuItem(
-                                                value: type,
-                                                child: Text(type.label),
-                                              ),
-                                            )
-                                            .toList(),
-                                        onChanged: (type) => setState(
-                                          () => row.type = type ?? row.type,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.close),
-                                      tooltip: 'Remove',
-                                      onPressed: () => setState(() {
-                                        row.dispose();
-                                        _legalDocumentRows.remove(row);
-                                      }),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: row.labelController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Label (Optional)',
-                                    hintText: 'e.g., Fire Safety Certificate',
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                ImageUploadTile(
-                                  label: 'Document File',
-                                  file: row.file,
-                                  onChanged: (file) => setState(() => row.file = file),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      OutlinedButton.icon(
-                        onPressed: () => setState(
-                          () => _legalDocumentRows.add(_LegalDocumentRow()),
-                        ),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Document'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                  // Address, Identity Verification (ID/selfie), and Business
+                  // Legal Documents were removed from here to match web's
+                  // onboarding.html, which hides all three and defers them
+                  // to Account Settings post-signup - see VendorSettingsScreen.
                   CheckboxListTile(
                     value: _acceptedTerms,
                     onChanged: (value) => setState(() => _acceptedTerms = value ?? false),
@@ -728,13 +536,11 @@ class _HeroStat extends StatelessWidget {
 class _SectionCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle;
   final List<Widget> children;
 
   const _SectionCard({
     required this.icon,
     required this.title,
-    this.subtitle,
     required this.children,
   });
 
@@ -772,18 +578,6 @@ class _SectionCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.only(left: 48),
-                child: Text(
-                  subtitle!,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
-                ),
-              ),
-            ],
             const SizedBox(height: 16),
             for (var i = 0; i < children.length; i++) ...[
               children[i],

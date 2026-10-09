@@ -520,16 +520,21 @@ class _VendorQuotationsScreenState extends State<VendorQuotationsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              quotation.eventName ??
-                                  'Event #${quotation.eventId}',
+                              quotation.plannerName ?? 'Planner',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              quotation.plannerName ?? 'Planner',
+                              quotation.eventName ??
+                                  'Event #${quotation.eventId}',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
+                            if (quotation.targetDate != null)
+                              Text(
+                                formatDate(quotation.targetDate!),
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
                             const SizedBox(height: 4),
                             Text(
                               quotation.requestMessage ?? '',

@@ -15,7 +15,7 @@ import 'vendor_quotations_screen.dart';
 import 'vendor_referrals_screen.dart';
 import 'vendor_settings_screen.dart';
 import 'vendor_storefront_screen.dart';
-import 'widgets/brand_header_bar.dart';
+import '../../marketplace/presentation/brand_header_bar.dart';
 
 class VendorShell extends StatefulWidget {
   const VendorShell({super.key});

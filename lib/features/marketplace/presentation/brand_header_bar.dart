@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../app/theme_mode_picker.dart';
-import '../../../auth/state/auth_controller.dart';
+import '../../../app/theme_mode_picker.dart';
+import '../../auth/state/auth_controller.dart';
 
-/// Persistent header for the phone-width vendor shell - always the brand
-/// logo, never a per-tab title, so it reads the same regardless of which of
-/// the 4 bottom-nav destinations is active. Dark background to match
-/// logo-navbar.svg, which is colored for exactly that (see eventsrus-web's
-/// navbar-dark fragment, the same asset's other usage).
+/// Persistent header shared by the vendor and planner shells - always the
+/// brand logo, never a per-tab or per-screen title, so it reads the same
+/// regardless of which bottom-nav destination is active or which event is
+/// open. Dark background to match logo-navbar.svg, which is colored for
+/// exactly that (see eventsrus-web's navbar-dark fragment, the same asset's
+/// other usage).
 class BrandHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   const BrandHeaderBar({super.key});
 

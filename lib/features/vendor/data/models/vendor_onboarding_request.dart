@@ -25,6 +25,10 @@ class VendorOnboardingRequest {
   // referral link - optional, silently ignored server-side if
   // missing/invalid (see UserService#becomeVendor on the backend).
   final String? referralCode;
+  // Admin-configured code granting the full free trial with no paywall
+  // (see PromoCodeService) - unlike referralCode, an invalid value rejects
+  // the whole submission server-side (InvalidPromoCodeException, 400).
+  final String? promoCode;
 
   const VendorOnboardingRequest({
     required this.businessName,
@@ -42,6 +46,7 @@ class VendorOnboardingRequest {
     this.facebookPageUrl,
     this.acceptedTerms = false,
     this.referralCode,
+    this.promoCode,
   });
 
   Map<String, dynamic> toFormFields() => {
@@ -61,5 +66,6 @@ class VendorOnboardingRequest {
         if (facebookPageUrl != null && facebookPageUrl!.isNotEmpty) 'facebookPageUrl': facebookPageUrl!,
         'acceptedTerms': acceptedTerms.toString(),
         if (referralCode != null && referralCode!.isNotEmpty) 'referralCode': referralCode!,
+        if (promoCode != null && promoCode!.isNotEmpty) 'promoCode': promoCode!,
       };
 }
