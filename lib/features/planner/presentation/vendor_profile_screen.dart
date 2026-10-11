@@ -1,19 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../auth/data/models/business_type.dart';
 import '../../marketplace/data/conversation_api.dart';
+import '../../marketplace/data/models/vendor_package.dart';
 import '../../marketplace/data/models/vendor_public_profile.dart';
 import '../../marketplace/data/quotation_api.dart';
 import '../../marketplace/data/vendor_directory_api.dart';
+import '../../marketplace/presentation/storefront_sections.dart';
+import '../../reviews/presentation/review_dialog.dart';
+import '../data/event_api.dart';
 
 class VendorProfileScreen extends StatefulWidget {
   final String slug;
   final int eventId;
+  // The category the planner was browsing when they got here (from Search
+  // Result's Browse pop-up) - threaded through to the bookmark toggle so
+  // the resulting checklist item groups under the right category heading.
+  // Null when reached some other way (name search) - the backend then
+  // falls back to the vendor's own first business type.
+  final String? categoryContext;
 
   const VendorProfileScreen({
     super.key,
     required this.slug,
     required this.eventId,
+    this.categoryContext,
   });
 
   @override
@@ -23,6 +35,8 @@ class VendorProfileScreen extends StatefulWidget {
 class _VendorProfileScreenState extends State<VendorProfileScreen> {
   VendorPublicProfile? _profile;
   bool _loading = true;
+  bool _bookmarked = false;
+  bool _bookmarkBusy = false;
 
   @override
   void initState() {
@@ -37,9 +51,18 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
         widget.slug,
         eventId: widget.eventId,
       );
+      bool bookmarked = false;
+      try {
+        final event = await context.read<EventApi>().getEvent(widget.eventId);
+        bookmarked = profile.vendorProfileId != null &&
+            event.bookmarkedVendorProfileIds.contains(profile.vendorProfileId);
+      } catch (_) {
+        // Non-fatal - the bookmark button just starts unbookmarked.
+      }
       if (!mounted) return;
       setState(() {
         _profile = profile;
+        _bookmarked = bookmarked;
         _loading = false;
       });
     } catch (_) {
@@ -48,187 +71,57 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
     }
   }
 
-  Future<void> _sendInquiry() async {
+  Future<void> _toggleBookmark() async {
     final profile = _profile;
     if (profile == null) return;
-    final messageController = TextEditingController();
-    DateTime? targetDate;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Send Inquiry'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  targetDate == null
-                      ? 'Target date (optional)'
-                      : targetDate.toString(),
-                ),
-                trailing: const Icon(Icons.calendar_today_outlined),
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: dialogContext,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 1095)),
-                  );
-                  if (date != null) setDialogState(() => targetDate = date);
-                },
-              ),
-              TextField(
-                controller: messageController,
-                decoration: const InputDecoration(labelText: 'Message'),
-                maxLines: 3,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Send'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed != true || messageController.text.trim().isEmpty) return;
-
+    final next = !_bookmarked;
+    setState(() => _bookmarkBusy = true);
     try {
-      await context.read<ConversationApi>().sendInquiry(
-        eventId: widget.eventId,
-        vendorUserId: profile.vendorUserId,
-        plannerName: 'Planner',
-        targetDate: targetDate,
-        message: messageController.text.trim(),
-      );
+      await context.read<EventApi>().setVendorBookmark(
+            widget.eventId,
+            profile.vendorUserId,
+            bookmarked: next,
+            category: widget.categoryContext,
+          );
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Inquiry sent')));
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Could not send inquiry')));
-    }
-  }
-
-  Future<void> _requestQuotation() async {
-    final profile = _profile;
-    if (profile == null) return;
-    final messageController = TextEditingController();
-    DateTime? targetDate;
-    final selectedPackageIds = <int>{};
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Request Quotation'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    targetDate == null
-                        ? 'Target date (optional)'
-                        : targetDate.toString(),
-                  ),
-                  trailing: const Icon(Icons.calendar_today_outlined),
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: dialogContext,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 1095)),
-                    );
-                    if (date != null) setDialogState(() => targetDate = date);
-                  },
-                ),
-                TextField(
-                  controller: messageController,
-                  decoration: const InputDecoration(
-                    labelText: 'What do you need a quote for?',
-                  ),
-                  maxLines: 3,
-                ),
-                if (profile.packages.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'Packages you\'re interested in (optional)',
-                    style: Theme.of(context).textTheme.labelLarge,
-                  ),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      for (final package in profile.packages)
-                        FilterChip(
-                          label: Text(package.name),
-                          selected: selectedPackageIds.contains(package.id),
-                          onSelected: (selected) => setDialogState(() {
-                            if (selected) {
-                              selectedPackageIds.add(package.id);
-                            } else {
-                              selectedPackageIds.remove(package.id);
-                            }
-                          }),
-                        ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Request'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (confirmed != true || messageController.text.trim().isEmpty) return;
-
-    try {
-      await context.read<QuotationApi>().requestQuotation(
-        eventId: widget.eventId,
-        vendorUserId: profile.vendorUserId,
-        plannerName: 'Planner',
-        targetDate: targetDate,
-        message: messageController.text.trim(),
-        packageIds: selectedPackageIds.isEmpty
-            ? null
-            : selectedPackageIds.toList(),
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Quotation requested')));
+      setState(() => _bookmarked = next);
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not request quotation')),
+        const SnackBar(content: Text('Could not update bookmark')),
       );
+    } finally {
+      if (mounted) setState(() => _bookmarkBusy = false);
+    }
+  }
+
+  Future<void> _openSendInquiry() async {
+    final profile = _profile;
+    if (profile == null) return;
+    final sent = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _SendInquiryScreen(eventId: widget.eventId, vendorUserId: profile.vendorUserId),
+      ),
+    );
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Inquiry sent')));
+    }
+  }
+
+  Future<void> _openRequestQuotation() async {
+    final profile = _profile;
+    if (profile == null) return;
+    final requested = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _RequestQuotationScreen(
+          eventId: widget.eventId,
+          vendorUserId: profile.vendorUserId,
+          packages: profile.packages,
+        ),
+      ),
+    );
+    if (requested == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Quotation requested')));
     }
   }
 
@@ -239,81 +132,349 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
     }
     final profile = _profile;
     if (profile == null) {
-      return const Scaffold(body: Center(child: Text('Vendor not found')));
+      return const Scaffold(body: Center(child: Text('Supplier not found')));
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(profile.businessName ?? 'Vendor')),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (profile.logoImageUrl != null)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      profile.logoImageUrl!,
-                      height: 140,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                const SizedBox(height: 16),
-                Text(
-                  profile.businessName ?? '',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '${profile.city ?? ''}, ${profile.country ?? ''}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                Text(profile.description ?? ''),
-                const SizedBox(height: 20),
-                Row(
+      appBar: AppBar(title: Text(profile.businessName ?? 'Supplier')),
+      // top: false - the AppBar already clears the top inset; this is only
+      // for the bottom, which nothing else here accounts for (no
+      // bottomNavigationBar on this pushed screen) and which otherwise lets
+      // the last section run under Android's edge-to-edge gesture/nav bar.
+      body: SafeArea(
+        top: false,
+        child: RefreshIndicator(
+          onRefresh: _load,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _sendInquiry,
-                        child: const Text('Send Inquiry'),
+                  if (profile.logoImageUrl != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        profile.logoImageUrl!,
+                        height: 140,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: _requestQuotation,
-                        child: const Text('Request Quotation'),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          profile.businessName ?? '',
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (profile.identityVerified) ...[
+                        const SizedBox(width: 6),
+                        const Icon(Icons.verified, color: Colors.green, size: 20),
+                      ],
+                    ],
+                  ),
+                  if (profile.businessTypes.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        profile.businessTypes.map(BusinessTypeApi.labelOrRaw).join(' • '),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Packages',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 4),
+                  if (profile.averageRating != null)
+                    Row(
+                      children: [
+                        StarRatingRow(rating: profile.averageRating!, size: 16),
+                        const SizedBox(width: 6),
+                        Text('${profile.averageRating!.toStringAsFixed(1)} (${profile.reviewCount})',
+                            style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    )
+                  else
+                    Text('No reviews yet', style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 12),
+                  Text(profile.description ?? ''),
+                  const SizedBox(height: 20),
+                  // Orange fill for "Bookmarked" - same family as
+                  // eventsrus-web's storefront (.btn-warning). This is a
+                  // deliberate status color (same meaning as "verified"
+                  // green elsewhere), not a theme accent, so it's one fixed
+                  // shade on purpose rather than derived from the theme -
+                  // it needs to read the same way regardless of light/dark
+                  // mode, same as the green verified badge above.
+                  _bookmarked
+                      ? FilledButton.icon(
+                          onPressed: _bookmarkBusy ? null : _toggleBookmark,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.orange.shade700,
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: _bookmarkBusy
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.bookmark),
+                          label: const Text('Bookmarked'),
+                        )
+                      : OutlinedButton.icon(
+                          onPressed: _bookmarkBusy ? null : _toggleBookmark,
+                          icon: _bookmarkBusy
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.bookmark_border),
+                          label: const Text('Bookmark this supplier'),
+                        ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _openSendInquiry,
+                    child: const Text('Send Inquiry'),
                   ),
-                ),
-                const SizedBox(height: 8),
-                ...profile.packages.map(
-                  (p) => Card(
-                    child: ListTile(
-                      title: Text(p.name),
-                      subtitle: Text(p.description ?? ''),
-                      trailing: p.price != null
-                          ? Text('₱${p.price!.toStringAsFixed(0)}')
-                          : null,
-                    ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: _openRequestQuotation,
+                    child: const Text('Request Quotation'),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 24),
+                  StorefrontSections(profile: profile),
+                ],
+              ),
             ),
           ),
+        ),
+      ),
+      ),
+    );
+  }
+}
+
+/// Full screen (not a dialog) so it reads consistently with the rest of the
+/// app's forms, which all got moved off popups to their own screens with a
+/// back arrow.
+class _SendInquiryScreen extends StatefulWidget {
+  final int eventId;
+  final int vendorUserId;
+
+  const _SendInquiryScreen({required this.eventId, required this.vendorUserId});
+
+  @override
+  State<_SendInquiryScreen> createState() => _SendInquiryScreenState();
+}
+
+class _SendInquiryScreenState extends State<_SendInquiryScreen> {
+  final _messageController = TextEditingController();
+  DateTime? _targetDate;
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 1095)),
+    );
+    if (date != null) setState(() => _targetDate = date);
+  }
+
+  Future<void> _send() async {
+    if (_messageController.text.trim().isEmpty) return;
+    setState(() => _sending = true);
+    try {
+      await context.read<ConversationApi>().sendInquiry(
+        eventId: widget.eventId,
+        vendorUserId: widget.vendorUserId,
+        plannerName: 'Planner',
+        targetDate: _targetDate,
+        message: _messageController.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _sending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not send inquiry')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Send Inquiry')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              child: ListTile(
+                title: Text(_targetDate == null ? 'Target date (optional)' : _targetDate.toString()),
+                trailing: const Icon(Icons.calendar_today_outlined),
+                onTap: _pickDate,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _messageController,
+              decoration: const InputDecoration(labelText: 'Message', border: OutlineInputBorder()),
+              maxLines: 6,
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _sending ? null : _send,
+              child: _sending
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Send'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Same reasoning as [_SendInquiryScreen] - a full screen instead of a
+/// dialog, now with the optional package picker.
+class _RequestQuotationScreen extends StatefulWidget {
+  final int eventId;
+  final int vendorUserId;
+  final List<VendorPackage> packages;
+
+  const _RequestQuotationScreen({
+    required this.eventId,
+    required this.vendorUserId,
+    required this.packages,
+  });
+
+  @override
+  State<_RequestQuotationScreen> createState() => _RequestQuotationScreenState();
+}
+
+class _RequestQuotationScreenState extends State<_RequestQuotationScreen> {
+  final _messageController = TextEditingController();
+  DateTime? _targetDate;
+  final _selectedPackageIds = <int>{};
+  bool _sending = false;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 1095)),
+    );
+    if (date != null) setState(() => _targetDate = date);
+  }
+
+  Future<void> _send() async {
+    if (_messageController.text.trim().isEmpty) return;
+    setState(() => _sending = true);
+    try {
+      await context.read<QuotationApi>().requestQuotation(
+        eventId: widget.eventId,
+        vendorUserId: widget.vendorUserId,
+        plannerName: 'Planner',
+        targetDate: _targetDate,
+        message: _messageController.text.trim(),
+        packageIds: _selectedPackageIds.isEmpty ? null : _selectedPackageIds.toList(),
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _sending = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not request quotation')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Request Quotation')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              child: ListTile(
+                title: Text(_targetDate == null ? 'Target date (optional)' : _targetDate.toString()),
+                trailing: const Icon(Icons.calendar_today_outlined),
+                onTap: _pickDate,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _messageController,
+              decoration: const InputDecoration(
+                labelText: 'What do you need a quote for?',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 6,
+            ),
+            if (widget.packages.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Packages you\'re interested in (optional)',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final package in widget.packages)
+                    FilterChip(
+                      label: Text(package.name),
+                      selected: _selectedPackageIds.contains(package.id),
+                      onSelected: (selected) => setState(() {
+                        if (selected) {
+                          _selectedPackageIds.add(package.id);
+                        } else {
+                          _selectedPackageIds.remove(package.id);
+                        }
+                      }),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _sending ? null : _send,
+              child: _sending
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Request'),
+            ),
+          ],
         ),
       ),
     );

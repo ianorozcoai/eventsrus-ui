@@ -106,7 +106,7 @@ class EventQuotationsTabState extends State<EventQuotationsTab> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
           title: Text(
-            "Accept ${quotation.vendorBusinessName ?? 'Vendor'}'s Quotation",
+            "Accept ${quotation.vendorBusinessName ?? 'Supplier'}'s Quotation",
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -152,7 +152,7 @@ class EventQuotationsTabState extends State<EventQuotationsTab> {
                 TextField(
                   controller: messageController,
                   decoration: const InputDecoration(
-                    labelText: 'Message to the vendor (optional)',
+                    labelText: 'Message to the supplier (optional)',
                   ),
                   maxLines: 2,
                 ),
@@ -256,7 +256,7 @@ class EventQuotationsTabState extends State<EventQuotationsTab> {
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
           title: Text(
-            'Request Revision - ${quotation.vendorBusinessName ?? 'Vendor'}',
+            'Request Revision - ${quotation.vendorBusinessName ?? 'Supplier'}',
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -351,10 +351,10 @@ class EventQuotationsTabState extends State<EventQuotationsTab> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(
-          'Decline Quotation - ${quotation.vendorBusinessName ?? 'Vendor'}',
+          'Decline Quotation - ${quotation.vendorBusinessName ?? 'Supplier'}',
         ),
         content: const Text(
-          "Not going with this vendor for this quote? This closes it out - it won't affect any other quotations for this event.",
+          "Not going with this supplier for this quote? This closes it out - it won't affect any other quotations for this event.",
         ),
         actions: [
           TextButton(
@@ -507,7 +507,7 @@ class EventQuotationsTabState extends State<EventQuotationsTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        quotation.vendorBusinessName ?? 'Vendor',
+                        quotation.vendorBusinessName ?? 'Supplier',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       if (quotation.quotedAmount != null)

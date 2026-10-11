@@ -49,3 +49,11 @@ app.*.map.json
 /android/build/
 /android/app/build/
 /android/.gradle/
+
+# Release signing - the upload keystore and its passwords. Never commit
+# these: whoever holds them can sign updates to the real Play Store
+# listing. Back the .jks file and its password up somewhere safe outside
+# git (password manager, not this repo).
+/android/key.properties
+/android/*.jks
+/android/*.keystore

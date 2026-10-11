@@ -231,4 +231,16 @@ extension BusinessTypeApi on BusinessType {
         throw FormatException('Unknown business type: $value');
     }
   }
+
+  /// Same as [fromApi(raw).label] but falls back to the raw string instead
+  /// of throwing on a value this enum doesn't recognize - for display
+  /// contexts (storefront business-type lines) where one unexpected value
+  /// shouldn't crash the whole screen.
+  static String labelOrRaw(String raw) {
+    try {
+      return fromApi(raw).label;
+    } catch (_) {
+      return raw;
+    }
+  }
 }

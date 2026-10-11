@@ -16,11 +16,19 @@ import 'vendor_package_image.dart';
 /// fields to parse.
 class VendorPublicProfile {
   final int vendorUserId;
+  // The VendorProfile's own id (distinct from vendorUserId above) - needed
+  // only to check/set this vendor's bookmark status for an event.
+  final int? vendorProfileId;
   final String? businessName;
   final String? ownerName;
   final String? description;
   final String? logoImageUrl;
   final String? businessType;
+  // The vendor's full business-type list - shown as a line under the
+  // business name on the storefront. Kept alongside the older singular
+  // businessType above rather than replacing it, so any existing reader of
+  // that field is untouched.
+  final List<String> businessTypes;
   final String? city;
   final String? state;
   final String? country;
@@ -61,11 +69,13 @@ class VendorPublicProfile {
 
   const VendorPublicProfile({
     required this.vendorUserId,
+    this.vendorProfileId,
     this.businessName,
     this.ownerName,
     this.description,
     this.logoImageUrl,
     this.businessType,
+    this.businessTypes = const [],
     this.city,
     this.state,
     this.country,
@@ -87,11 +97,13 @@ class VendorPublicProfile {
 
   factory VendorPublicProfile.fromJson(Map<String, dynamic> json) => VendorPublicProfile(
         vendorUserId: json['vendorUserId'] as int,
+        vendorProfileId: json['vendorProfileId'] as int?,
         businessName: json['businessName'] as String?,
         ownerName: json['ownerName'] as String?,
         description: json['description'] as String?,
         logoImageUrl: json['logoImageUrl'] as String?,
         businessType: json['businessType'] as String?,
+        businessTypes: (json['businessTypes'] as List? ?? []).map((e) => e as String).toList(),
         city: json['city'] as String?,
         state: json['state'] as String?,
         country: json['country'] as String?,

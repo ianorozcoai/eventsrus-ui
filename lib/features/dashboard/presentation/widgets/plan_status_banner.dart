@@ -63,7 +63,7 @@ class _PlanStatusBannerState extends State<PlanStatusBanner> {
       banners.add(
         _Banner(
           message: status.expired
-              ? 'Your plan has expired. Upgrade to keep full access to vendor features.'
+              ? 'Your plan has expired. Upgrade to keep full access to supplier features.'
               : status.inGracePeriod
                   ? 'Your plan has expired but you still have full access until '
                       '${_formatDate(status.graceEndsAt)}. Renew now to avoid losing access.'

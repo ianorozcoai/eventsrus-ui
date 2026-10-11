@@ -98,6 +98,19 @@ class _SubscriptionPlanPickerState extends State<SubscriptionPlanPicker> {
           label: const Text('Continue with PayPal'),
         ),
         const SizedBox(height: 8),
+        // Same PayPal checkout as the button above - PayPal's own hosted
+        // approval page already offers a "Pay with Debit or Credit Card"
+        // guest option alongside logging into PayPal (same as web's Smart
+        // Buttons, which render that as a second button automatically; a
+        // URL can't jump straight to that guest view, PayPal's page decides
+        // what to show). This just gives it equal billing here too, instead
+        // of being buried as a link after tapping "Continue with PayPal".
+        OutlinedButton.icon(
+          onPressed: _isSubmitting ? null : _continueToPayPal,
+          icon: const Icon(Icons.credit_card_outlined),
+          label: const Text('Debit or Credit Card'),
+        ),
+        const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: _isSubmitting ? null : _payWithGcash,
           icon: const Icon(Icons.qr_code_2),

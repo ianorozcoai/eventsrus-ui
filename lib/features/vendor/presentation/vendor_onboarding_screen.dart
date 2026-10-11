@@ -8,6 +8,7 @@ import '../../auth/data/models/business_type.dart';
 import '../../auth/state/auth_controller.dart';
 import '../data/models/vendor_onboarding_request.dart';
 import '../data/vendor_api.dart';
+import 'widgets/multi_select_field.dart';
 
 class VendorOnboardingScreen extends StatefulWidget {
   const VendorOnboardingScreen({super.key});
@@ -30,12 +31,24 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
 
   // Backend requires at least one business type (`@NotEmpty
   // List<BusinessType> businessTypes`) - mirrors web's multi-select picker.
-  final Set<BusinessType> _businessTypes = {};
+  Set<BusinessType> _businessTypes = {};
   bool _acceptedTerms = false;
   PlatformFile? _logo;
 
   bool _isSubmitting = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Defaults Contact Email to the account's sign-in email, same as web -
+    // still editable, just not blank for something every vendor already
+    // has to hand.
+    final email = context.read<AuthController>().email;
+    if (email != null && email.isNotEmpty) {
+      _contactEmailController.text = email;
+    }
+  }
 
   @override
   void dispose() {
@@ -58,7 +71,7 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
       return;
     }
     if (!_acceptedTerms) {
-      setState(() => _errorMessage = 'You must accept the vendor terms of service.');
+      setState(() => _errorMessage = 'You must accept the supplier terms of service.');
       return;
     }
 
@@ -152,32 +165,13 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
                             ? 'Required'
                             : null,
                       ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Business Type(s)',
-                          style: Theme.of(context).textTheme.labelLarge,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: BusinessType.values
-                            .map(
-                              (type) => FilterChip(
-                                label: Text(type.label),
-                                selected: _businessTypes.contains(type),
-                                onSelected: (selected) => setState(() {
-                                  if (selected) {
-                                    _businessTypes.add(type);
-                                  } else {
-                                    _businessTypes.remove(type);
-                                  }
-                                }),
-                              ),
-                            )
-                            .toList(),
+                      MultiSelectField<BusinessType>(
+                        label: 'Business Type(s)',
+                        options: BusinessType.values,
+                        selected: _businessTypes,
+                        itemLabel: (type) => type.label,
+                        onChanged: (selected) =>
+                            setState(() => _businessTypes = selected),
                       ),
                       TextFormField(
                         controller: _ownerNameController,
@@ -216,7 +210,7 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
                         textCapitalization: TextCapitalization.characters,
                         decoration: const InputDecoration(
                           labelText: 'Referral Code',
-                          helperText: 'Were you referred by another vendor? Enter their code here.',
+                          helperText: 'Were you referred by another supplier? Enter their code here.',
                           prefixIcon: Icon(Icons.confirmation_number_outlined),
                         ),
                       ),
@@ -289,7 +283,7 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
                     onChanged: (value) => setState(() => _acceptedTerms = value ?? false),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('I accept the vendor terms of service.'),
+                    title: const Text('I accept the supplier terms of service.'),
                   ),
                   const SizedBox(height: 8),
                   if (_errorMessage != null) ...[
@@ -388,37 +382,22 @@ class _HeroHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: kBrandOrange,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'FREE PRO TRIAL',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Text(
-                  'Become an EventsRUs Vendor',
+                  'Become an EventsRUs Supplier',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 8),
+                // No unconditional trial claim here on purpose - matches
+                // web's onboarding.html, which doesn't promise a free trial
+                // either. A trial only happens if the promo code below
+                // turns out to be valid (VendorOnboardingRequest.promoCode,
+                // admin-configured on the backend); everyone else lands on
+                // the paywall after signup, same as web.
                 Text(
-                  'Get discovered by thousands of event planners — start with a free '
-                  'PRO plan for 180 days.',
+                  'Get discovered by thousands of event planners.',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
@@ -426,15 +405,10 @@ class _HeroHeader extends StatelessWidget {
                 const SizedBox(height: 20),
                 const Divider(color: Colors.white24, height: 1),
                 const SizedBox(height: 16),
-                Wrap(
+                const Wrap(
                   spacing: 24,
                   runSpacing: 8,
-                  children: const [
-                    _HeroStat(
-                      icon: Icons.card_giftcard_outlined,
-                      label: 'FREE TRIAL',
-                      value: 'PRO, 180 days',
-                    ),
+                  children: [
                     _HeroStat(
                       icon: Icons.bolt_outlined,
                       label: 'SETUP TIME',
@@ -512,20 +486,31 @@ class _HeroStat extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: Colors.white70),
         const SizedBox(width: 6),
-        Text(
-          '$label: ',
-          style: const TextStyle(
-            color: Colors.white70,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
+        // Flexible + Text.rich (one Text, two spans) so this wraps/shrinks
+        // on a narrow phone instead of overflowing - two plain Text widgets
+        // in a MainAxisSize.min Row can't give way to each other.
+        Flexible(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+                TextSpan(
+                  text: value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

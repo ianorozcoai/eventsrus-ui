@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../dashboard/presentation/widgets/plan_status_banner.dart';
 import '../../marketplace/presentation/app_top_bar.dart';
 import '../../marketplace/presentation/conversations_screen.dart';
 import '../../reviews/presentation/vendor_reviews_screen.dart';
@@ -81,7 +82,18 @@ class _VendorShellState extends State<VendorShell> {
     if (!isWide) {
       return Scaffold(
         appBar: const BrandHeaderBar(),
-        body: SafeArea(child: _narrowScreens[_narrowIndex]),
+        // PlanStatusBanner lives here (not inside each screen) so it
+        // persists across every tab, matching web's paywall modal, which
+        // shows on every vendor-shell page via a shared layout check
+        // (PaywallModelAttributes) rather than just the dashboard.
+        body: SafeArea(
+          child: Column(
+            children: [
+              const PlanStatusBanner(),
+              Expanded(child: _narrowScreens[_narrowIndex]),
+            ],
+          ),
+        ),
         // Deep violet (same accent as the dashboard's stat-card icons) -
         // darker than the logo wordmark's own #A66CF8, which read as too
         // washed-out for a solid nav bar. White icons/labels on top either
@@ -142,7 +154,14 @@ class _VendorShellState extends State<VendorShell> {
         children: [
           rail,
           const VerticalDivider(width: 1),
-          Expanded(child: _screens[_index]),
+          Expanded(
+            child: Column(
+              children: [
+                const PlanStatusBanner(),
+                Expanded(child: _screens[_index]),
+              ],
+            ),
+          ),
         ],
       ),
     );

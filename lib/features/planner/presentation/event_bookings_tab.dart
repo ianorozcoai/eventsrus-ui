@@ -138,7 +138,7 @@ class EventBookingsTabState extends State<EventBookingsTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "This marks the booking as CANCELLED and notifies the vendor. This can't be undone.",
+                "This marks the booking as CANCELLED and notifies the supplier. This can't be undone.",
               ),
               const SizedBox(height: 12),
               TextField(
@@ -315,7 +315,7 @@ class EventBookingsTabState extends State<EventBookingsTab> {
     final isEdit = booking.reviewId != null;
     final result = await showReviewFormDialog(
       context,
-      vendorLabel: booking.vendorBusinessName ?? 'Vendor',
+      vendorLabel: booking.vendorBusinessName ?? 'Supplier',
       initialRating: isEdit ? booking.reviewRating : null,
       initialComment: isEdit ? booking.reviewComment : null,
     );
@@ -369,7 +369,7 @@ class EventBookingsTabState extends State<EventBookingsTab> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        booking.vendorBusinessName ?? 'Vendor',
+                        booking.vendorBusinessName ?? 'Supplier',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(

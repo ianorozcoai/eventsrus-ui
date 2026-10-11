@@ -8,11 +8,12 @@ import '../data/event_api.dart';
 import '../data/models/planner_event.dart';
 import 'event_bookings_tab.dart';
 import 'event_chat_tab.dart';
-import 'event_overview_tab.dart';
+import 'event_checklist_tab.dart';
 import 'event_quotations_tab.dart';
+import 'event_search_result_tab.dart';
 
-/// The planner's per-event hub: a header plus a 4-tab bottom nav (Overview,
-/// Chat, Quotations, Booking) scoped to one event. Pushed from
+/// The planner's per-event hub: a header plus a 5-tab bottom nav (Overview,
+/// Checklist, Chat, Quotations, Booking) scoped to one event. Pushed from
 /// EventsListScreen (tapping an event) or EventCreateScreen (right after
 /// creating one). This bottom nav only ever appears once a specific event
 /// is open - it's deliberately separate from both PlannerShell's own 3-tab
@@ -35,7 +36,6 @@ class _PlannerEventShellState extends State<PlannerEventShell> {
   int _index = 0;
   int _unseenQuotations = 0;
   int _unseenBookings = 0;
-  final _chatTabKey = GlobalKey<EventChatTabState>();
 
   @override
   void initState() {
@@ -74,21 +74,19 @@ class _PlannerEventShellState extends State<PlannerEventShell> {
 
   void _onDestinationSelected(int index) {
     setState(() => _index = index);
-    if (index == 2 && _unseenQuotations > 0) {
+    if (index == 3 && _unseenQuotations > 0) {
       context.read<QuotationApi>().markSeenForEvent(widget.eventId).catchError((_) {});
       setState(() => _unseenQuotations = 0);
-    } else if (index == 3 && _unseenBookings > 0) {
+    } else if (index == 4 && _unseenBookings > 0) {
       context.read<BookingApi>().markSeenForEvent(widget.eventId).catchError((_) {});
       setState(() => _unseenBookings = 0);
     }
   }
 
-  void _goToChat() => _onDestinationSelected(1);
+  void _goToChat() => _onDestinationSelected(2);
 
-  Future<void> _onConversationStarted() async {
-    await _chatTabKey.currentState?.reload();
-    if (!mounted) return;
-    _goToChat();
+  void _onEventUpdated(PlannerEvent updated) {
+    setState(() => _event = updated);
   }
 
   @override
@@ -111,12 +109,10 @@ class _PlannerEventShellState extends State<PlannerEventShell> {
       appBar: const BrandHeaderBar(),
       body: Column(
         children: [
-          // Overview already opens with the event's name as its own
-          // heading, so this context strip is only needed on the other
-          // three tabs where nothing else on screen says which event you're
-          // looking at.
-          if (_index != 0)
-            Container(
+          // Search Result's own heading is just "Search Result", not the
+          // event's name - unlike the old Overview tab's step 1, so this
+          // strip is shown on every tab now, not just the other four.
+          Container(
               width: double.infinity,
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -146,12 +142,13 @@ class _PlannerEventShellState extends State<PlannerEventShell> {
             child: IndexedStack(
               index: _index,
               children: [
-                EventOverviewTab(
+                EventSearchResultTab(
                   event: event,
                   onGoToChat: _goToChat,
-                  onConversationStarted: _onConversationStarted,
+                  onEventUpdated: _onEventUpdated,
                 ),
-                EventChatTab(key: _chatTabKey, eventId: event.id),
+                EventChecklistTab(event: event),
+                EventChatTab(eventId: event.id),
                 EventQuotationsTab(eventId: event.id),
                 EventBookingsTab(eventId: event.id),
               ],
@@ -159,37 +156,52 @@ class _PlannerEventShellState extends State<PlannerEventShell> {
           ),
         ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: _onDestinationSelected,
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            label: 'Overview',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: 'Chat',
-          ),
-          NavigationDestination(
-            icon: _unseenQuotations > 0
-                ? Badge(
-                    label: Text('$_unseenQuotations'),
-                    child: const Icon(Icons.request_quote_outlined),
-                  )
-                : const Icon(Icons.request_quote_outlined),
-            label: 'Quotations',
-          ),
-          NavigationDestination(
-            icon: _unseenBookings > 0
-                ? Badge(
-                    label: Text('$_unseenBookings'),
-                    child: const Icon(Icons.event_available_outlined),
-                  )
-                : const Icon(Icons.event_available_outlined),
-            label: 'Booking',
-          ),
-        ],
+      // NavigationDestination.label is a plain String with no textAlign
+      // control, and "Search Result" wraps to two lines in the nav bar's
+      // narrow per-tab width - without this, Text's default textAlign
+      // (start) left-aligns the wrapped lines instead of centering them.
+      // Text falls back to DefaultTextStyle.textAlign when it has none of
+      // its own, so this centers every destination's label (including the
+      // single-line ones, where it's a no-op) without needing a custom
+      // label widget.
+      bottomNavigationBar: DefaultTextStyle.merge(
+        textAlign: TextAlign.center,
+        child: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: _onDestinationSelected,
+          destinations: [
+            const NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              label: 'Result',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.checklist_outlined),
+              label: 'Checklist',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.chat_bubble_outline),
+              label: 'Chat',
+            ),
+            NavigationDestination(
+              icon: _unseenQuotations > 0
+                  ? Badge(
+                      label: Text('$_unseenQuotations'),
+                      child: const Icon(Icons.request_quote_outlined),
+                    )
+                  : const Icon(Icons.request_quote_outlined),
+              label: 'Quotations',
+            ),
+            NavigationDestination(
+              icon: _unseenBookings > 0
+                  ? Badge(
+                      label: Text('$_unseenBookings'),
+                      child: const Icon(Icons.event_available_outlined),
+                    )
+                  : const Icon(Icons.event_available_outlined),
+              label: 'Booking',
+            ),
+          ],
+        ),
       ),
     );
   }

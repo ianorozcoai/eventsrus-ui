@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/api_exception.dart';
-import '../../dashboard/presentation/widgets/plan_status_banner.dart';
 import '../data/models/vendor_dashboard.dart';
 import '../data/vendor_dashboard_api.dart';
 
@@ -89,7 +88,6 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const PlanStatusBanner(),
             Text(
               'Dashboard',
               style: Theme.of(
