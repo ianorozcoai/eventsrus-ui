@@ -11,9 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pinned to the exact version verified locally all session, rather
+      # than floating on channel: stable - that previously resolved to
+      # 3.47.7 (current stable as of this writing) against a local dev
+      # environment verified only on 3.44.9, and flutter analyze failed in
+      # CI under the newer SDK for reasons never reproduced locally.
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: 3.44.9
           cache: true
 
       - name: Install dependencies
