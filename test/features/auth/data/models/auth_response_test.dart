@@ -9,6 +9,7 @@ void main() {
     test('parses a full vendor response with a plan', () {
       final response = AuthResponse.fromJson({
         'token': 'a.jwt.token',
+        'refreshToken': 'a.refresh.token',
         'tokenType': 'Bearer',
         'expiresIn': 3600,
         'role': 'VENDOR',
@@ -20,6 +21,7 @@ void main() {
       });
 
       expect(response.token, 'a.jwt.token');
+      expect(response.refreshToken, 'a.refresh.token');
       expect(response.role, Role.vendor);
       expect(response.signupIntent, SignupIntent.vendor);
       expect(response.plan, PlanTier.pro);
@@ -29,6 +31,7 @@ void main() {
     test('a planner mid-vendor-onboarding has role planner but signupIntent vendor', () {
       final response = AuthResponse.fromJson({
         'token': 'a.jwt.token',
+        'refreshToken': 'a.refresh.token',
         'expiresIn': 3600,
         'role': 'PLANNER',
         'signupIntent': 'VENDOR',
@@ -41,6 +44,7 @@ void main() {
     test('defaults tokenType to Bearer and tolerates missing optional fields', () {
       final response = AuthResponse.fromJson({
         'token': 'a.jwt.token',
+        'refreshToken': 'a.refresh.token',
         'expiresIn': 3600,
         'role': 'PLANNER',
       });
@@ -56,6 +60,7 @@ void main() {
       expect(
         () => AuthResponse.fromJson({
           'token': 'a.jwt.token',
+          'refreshToken': 'a.refresh.token',
           'expiresIn': 3600,
           'role': 'SUPERADMIN',
         }),
