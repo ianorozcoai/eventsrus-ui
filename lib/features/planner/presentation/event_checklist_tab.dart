@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/logging/app_logger.dart';
+import '../../../core/ui/error_display.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../auth/data/models/business_type.dart';
 import '../data/event_api.dart';
@@ -82,11 +84,10 @@ class _EventChecklistTabState extends State<EventChecklistTab> {
         final index = _checklist.indexWhere((e) => e.id == item.id);
         if (index != -1) _checklist[index] = updated;
       });
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('EventChecklistTab', 'Failed to update checklist item', error: e, stackTrace: st);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not update checklist item')),
-      );
+      showFriendlyError(context, message: 'Could not update checklist item');
     } finally {
       if (mounted) setState(() => _busyChecklistItemId = null);
     }
@@ -122,11 +123,10 @@ class _EventChecklistTabState extends State<EventChecklistTab> {
       final item = await context.read<EventApi>().addChecklistItem(widget.event.id, label);
       if (!mounted) return;
       setState(() => _checklist = [..._checklist, item]);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('EventChecklistTab', 'Failed to add checklist item', error: e, stackTrace: st);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not add checklist item')),
-      );
+      showFriendlyError(context, message: 'Could not add checklist item');
     } finally {
       if (mounted) setState(() => _addingItem = false);
     }

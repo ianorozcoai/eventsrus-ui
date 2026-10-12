@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/logging/app_logger.dart';
+import '../../../core/ui/error_display.dart';
 import '../../auth/data/models/business_type.dart';
 import '../../marketplace/data/conversation_api.dart';
 import '../../marketplace/data/models/vendor_package.dart';
@@ -56,8 +58,9 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
         final event = await context.read<EventApi>().getEvent(widget.eventId);
         bookmarked = profile.vendorProfileId != null &&
             event.bookmarkedVendorProfileIds.contains(profile.vendorProfileId);
-      } catch (_) {
+      } catch (e, st) {
         // Non-fatal - the bookmark button just starts unbookmarked.
+        AppLogger.warn('VendorProfileScreen', 'Could not determine bookmark status: $e\n$st');
       }
       if (!mounted) return;
       setState(() {
@@ -65,7 +68,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
         _bookmarked = bookmarked;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('VendorProfileScreen', 'Failed to load vendor profile', error: e, stackTrace: st);
       if (!mounted) return;
       setState(() => _loading = false);
     }
@@ -85,11 +89,10 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
           );
       if (!mounted) return;
       setState(() => _bookmarked = next);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('VendorProfileScreen', 'Failed to update bookmark', error: e, stackTrace: st);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not update bookmark')),
-      );
+      showFriendlyError(context, message: 'Could not update bookmark');
     } finally {
       if (mounted) setState(() => _bookmarkBusy = false);
     }
@@ -309,12 +312,11 @@ class _SendInquiryScreenState extends State<_SendInquiryScreen> {
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('SendInquiryScreen', 'Failed to send inquiry', error: e, stackTrace: st);
       if (!mounted) return;
       setState(() => _sending = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not send inquiry')),
-      );
+      showFriendlyError(context, message: 'Could not send inquiry');
     }
   }
 
@@ -407,12 +409,11 @@ class _RequestQuotationScreenState extends State<_RequestQuotationScreen> {
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('RequestQuotationScreen', 'Failed to request quotation', error: e, stackTrace: st);
       if (!mounted) return;
       setState(() => _sending = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not request quotation')),
-      );
+      showFriendlyError(context, message: 'Could not request quotation');
     }
   }
 

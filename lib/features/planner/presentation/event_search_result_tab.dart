@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/logging/app_logger.dart';
+import '../../../core/ui/error_display.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../auth/data/models/business_type.dart';
 import '../../marketplace/data/models/vendor_search_result.dart';
@@ -107,9 +109,10 @@ class _EventSearchResultTabState extends State<EventSearchResultTab> {
       // the same event to both via one IndexedStack, and EventChecklistTab
       // already re-derives its local list from widget.event.checklist.
       widget.onEventUpdated(updated);
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('EventSearchResultTab', 'Failed to remove category', error: e, stackTrace: st);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not remove category')));
+      showFriendlyError(context, message: 'Could not remove category');
     } finally {
       if (mounted) setState(() => _busyCategoryTypes.remove(group.vendorType));
     }
@@ -341,9 +344,10 @@ class _AddCategoryScreenState extends State<_AddCategoryScreen> {
       if (!mounted) return;
       widget.onEventUpdated(updated);
       setState(() => _remaining.removeAt(index));
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('EventSearchResultTab', 'Failed to add category', error: e, stackTrace: st);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not add category')));
+      showFriendlyError(context, message: 'Could not add category');
     }
   }
 
@@ -409,8 +413,9 @@ class _NameSearchPopupContentState extends State<_NameSearchPopupContent> {
       final results = await vendorDirectoryApi.search(query);
       if (!mounted) return;
       setState(() => _results = results);
-    } catch (_) {
+    } catch (e, st) {
       // Non-fatal - just leave the previous results (or hint) in place.
+      AppLogger.warn('EventSearchResultTab', 'Name search failed: $e\n$st');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

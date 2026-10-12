@@ -1,8 +1,11 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'app/app.dart';
 import 'app/theme_controller.dart';
+import 'core/logging/app_logger.dart';
 import 'core/network/api_client.dart';
 import 'core/notifications/push_notification_service.dart';
 import 'core/storage/secure_token_storage.dart';
@@ -40,6 +43,19 @@ import 'features/vendor/data/vendor_social_media_api.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Without these, a framework-level build error or an uncaught async error
+  // (a Future that rejects outside any try/catch) has zero chance of being
+  // logged anywhere - this is the one global backstop that catches those,
+  // on top of the per-call-site logging added at individual catch blocks.
+  FlutterError.onError = (details) {
+    AppLogger.error('FlutterError', details.exceptionAsString(), error: details.exception, stackTrace: details.stack);
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppLogger.error('PlatformDispatcher', error.toString(), error: error, stackTrace: stack);
+    return true;
+  };
+
   await GoogleAuthGateway.instance.ensureInitialized();
   // No-ops until google-services.json is in place - see
   // PushNotificationService's own doc comment.

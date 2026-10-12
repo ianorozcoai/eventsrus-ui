@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../config/app_config.dart';
+import '../logging/app_logger.dart';
 import '../storage/secure_token_storage.dart';
 
 class ApiClient {
@@ -44,12 +45,19 @@ class ApiClient {
         onError: (error, handler) async {
           final isAuthEndpoint = error.requestOptions.path.startsWith('/api/v1/auth/');
           if (error.response?.statusCode != 401 || isAuthEndpoint) {
+            // Not the silent-refresh case - every other failure is logged
+            // here, the one place every failing request passes through.
+            _logFailure(error);
             handler.next(error);
             return;
           }
 
           final newToken = await _refreshAccessToken();
           if (newToken == null) {
+            // The silent refresh itself failed - this is the one 401 case
+            // worth logging, since it means the session is genuinely dead,
+            // not just routinely rotating.
+            _logFailure(error);
             handler.next(error);
             return;
           }
@@ -59,10 +67,21 @@ class ApiClient {
             retryOptions.headers['Authorization'] = 'Bearer $newToken';
             handler.resolve(await dio.fetch(retryOptions));
           } catch (_) {
+            _logFailure(error);
             handler.next(error);
           }
         },
       ),
+    );
+  }
+
+  void _logFailure(DioException error) {
+    AppLogger.error(
+      'ApiClient',
+      '${error.requestOptions.method} ${error.requestOptions.path} failed '
+          '(${error.response?.statusCode ?? error.type})',
+      error: error,
+      stackTrace: error.stackTrace,
     );
   }
 

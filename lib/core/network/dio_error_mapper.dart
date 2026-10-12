@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'api_exception.dart';
+import '../logging/app_logger.dart';
 import '../../features/auth/data/models/error_response.dart';
 
 ApiException mapDioError(DioException e) {
@@ -18,7 +19,13 @@ ApiException mapDioError(DioException e) {
   if (response.data is Map<String, dynamic>) {
     try {
       parsed = ErrorResponse.fromJson(response.data as Map<String, dynamic>);
-    } catch (_) {
+    } catch (parseError, stackTrace) {
+      AppLogger.error(
+        'DioErrorMapper',
+        'Could not parse error body for status $statusCode',
+        error: parseError,
+        stackTrace: stackTrace,
+      );
       parsed = null;
     }
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/logging/app_logger.dart';
+import '../../../core/ui/error_display.dart';
 import '../data/event_api.dart';
 import '../data/models/event_recommendations.dart';
 import '../data/models/philippine_provinces.dart';
@@ -85,10 +87,10 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
           _categorySelected.putIfAbsent(cat.type, () => false);
         }
       });
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('EventCreateScreen', 'Failed to load supplier recommendations', error: e, stackTrace: st);
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not load supplier categories')));
+      showFriendlyError(context, message: 'Could not load supplier categories');
       setState(() => _step = 1);
     } finally {
       if (mounted) setState(() => _loadingRecommendations = false);
@@ -127,9 +129,10 @@ class _EventCreateScreenState extends State<EventCreateScreen> {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => PlannerEventShell(eventId: created.id)),
       );
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('EventCreateScreen', 'Failed to create event', error: e, stackTrace: st);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not create event')));
+      showFriendlyError(context, message: 'Could not create event');
     } finally {
       if (mounted) setState(() => _creating = false);
     }
