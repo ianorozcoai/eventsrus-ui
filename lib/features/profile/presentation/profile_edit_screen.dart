@@ -5,6 +5,7 @@ import '../../../core/network/api_exception.dart';
 import '../../auth/state/auth_controller.dart';
 import '../data/models/user_profile.dart';
 import '../data/user_api.dart';
+import 'delete_account_screen.dart';
 
 class ProfileEditScreen extends StatefulWidget {
   const ProfileEditScreen({super.key});
@@ -192,6 +193,16 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
                               ? const SizedBox(
                                   width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                               : const Text('Save Changes'),
+                        ),
+                        const SizedBox(height: 24),
+                        TextButton(
+                          onPressed: _saving
+                              ? null
+                              : () => Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+                                  ),
+                          style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+                          child: const Text('Delete account'),
                         ),
                       ],
                     ),

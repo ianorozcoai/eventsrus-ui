@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../app/theme_mode_picker.dart';
 import '../../auth/state/auth_controller.dart';
+import '../../profile/presentation/delete_account_screen.dart';
 
 /// Persistent header shared by the vendor and planner shells - always the
 /// brand logo, never a per-tab or per-screen title, so it reads the same
@@ -36,6 +37,22 @@ class BrandHeaderBar extends StatelessWidget implements PreferredSizeWidget {
           onPressed: () => _confirmLogout(context, auth),
           icon: const Icon(Icons.logout),
           tooltip: 'Log out',
+        ),
+        // Google Play requires an in-app way to delete an account; this
+        // header is shared by the planner and vendor shells, so one entry
+        // here covers both roles.
+        PopupMenuButton<String>(
+          tooltip: 'More',
+          onSelected: (value) {
+            if (value == 'delete-account') {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+              );
+            }
+          },
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: 'delete-account', child: Text('Delete account')),
+          ],
         ),
       ],
     );
