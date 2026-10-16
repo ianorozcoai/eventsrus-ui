@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../auth/data/models/role.dart';
 import '../../auth/state/auth_controller.dart';
+import '../../moderation/data/moderation_models.dart';
+import '../../moderation/presentation/moderation_actions.dart';
 import '../data/conversation_api.dart';
 import '../data/models/conversation_message.dart';
 import '../data/models/conversation_summary.dart';
@@ -123,10 +125,55 @@ class _ConversationThreadScreenState extends State<ConversationThreadScreen> {
       if (!mounted) return;
       setState(() => _messages = messages);
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    } on ApiException catch (e) {
+      // E.g. 403 when either person has blocked the other: say why, and put
+      // the text back so nothing the person typed is lost.
+      if (!mounted) return;
+      _replyController.text = text;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  Future<void> _reportPerson(ConversationSummary summary) {
+    return reportWithDialog(
+      context,
+      contentType: ReportContentType.user,
+      contentId: summary.otherPartyUserId,
+      subject: summary.otherPartyName,
+    );
+  }
+
+  Future<void> _blockPerson(ConversationSummary summary) async {
+    final blocked = await confirmAndBlock(
+      context,
+      userId: summary.otherPartyUserId,
+      name: summary.otherPartyName,
+    );
+    if (blocked && mounted) Navigator.of(context).maybePop();
+  }
+
+  /// Long-press on the other person's message: report just that message.
+  Future<void> _reportMessage(ConversationMessage message) async {
+    final choice = await showModalBottomSheet<bool>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: ListTile(
+          leading: const Icon(Icons.flag_outlined),
+          title: const Text('Report this message'),
+          onTap: () => Navigator.of(sheetContext).pop(true),
+        ),
+      ),
+    );
+    if (choice != true || !mounted) return;
+    await reportWithDialog(
+      context,
+      contentType: ReportContentType.message,
+      contentId: message.id,
+      subject: 'this message',
+    );
   }
 
   /// Vendor-only entry point for starting a brand-new quote directly from
@@ -305,6 +352,21 @@ class _ConversationThreadScreenState extends State<ConversationThreadScreen> {
               icon: const Icon(Icons.request_quote_outlined),
               tooltip: 'Create a Quote',
             ),
+          if (summary != null)
+            PopupMenuButton<String>(
+              tooltip: 'More',
+              onSelected: (value) {
+                if (value == 'report') {
+                  _reportPerson(summary);
+                } else if (value == 'block') {
+                  _blockPerson(summary);
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'report', child: Text('Report this person')),
+                PopupMenuItem(value: 'block', child: Text('Block this person')),
+              ],
+            ),
         ],
         bottom: summary?.eventName == null
             ? null
@@ -339,9 +401,13 @@ class _ConversationThreadScreenState extends State<ConversationThreadScreen> {
                                   summary == null ||
                                   message.senderUserId !=
                                       summary.otherPartyUserId;
-                              return _MessageBubble(
-                                message: message,
-                                isMe: isMe,
+                              return GestureDetector(
+                                // Only the other person's messages can be reported.
+                                onLongPress: isMe ? null : () => _reportMessage(message),
+                                child: _MessageBubble(
+                                  message: message,
+                                  isMe: isMe,
+                                ),
                               );
                             },
                           ),

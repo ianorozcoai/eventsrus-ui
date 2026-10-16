@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../app/theme_mode_picker.dart';
 import '../../auth/state/auth_controller.dart';
+import '../../moderation/presentation/blocked_users_screen.dart';
 import '../../profile/presentation/delete_account_screen.dart';
 
 /// Persistent header shared by the vendor and planner shells - always the
@@ -44,13 +45,18 @@ class BrandHeaderBar extends StatelessWidget implements PreferredSizeWidget {
         PopupMenuButton<String>(
           tooltip: 'More',
           onSelected: (value) {
-            if (value == 'delete-account') {
+            if (value == 'blocked-users') {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const BlockedUsersScreen()),
+              );
+            } else if (value == 'delete-account') {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
               );
             }
           },
           itemBuilder: (_) => const [
+            PopupMenuItem(value: 'blocked-users', child: Text('Blocked users')),
             PopupMenuItem(value: 'delete-account', child: Text('Delete account')),
           ],
         ),

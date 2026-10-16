@@ -10,6 +10,8 @@ import '../../marketplace/data/models/vendor_public_profile.dart';
 import '../../marketplace/data/quotation_api.dart';
 import '../../marketplace/data/vendor_directory_api.dart';
 import '../../marketplace/presentation/storefront_sections.dart';
+import '../../moderation/data/moderation_models.dart';
+import '../../moderation/presentation/moderation_actions.dart';
 import '../../reviews/presentation/review_dialog.dart';
 import '../data/event_api.dart';
 
@@ -139,7 +141,32 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text(profile.businessName ?? 'Supplier')),
+      appBar: AppBar(
+        title: Text(profile.businessName ?? 'Supplier'),
+        actions: [
+          PopupMenuButton<String>(
+            tooltip: 'More',
+            onSelected: (value) async {
+              final name = profile.businessName ?? 'this supplier';
+              if (value == 'report') {
+                await reportWithDialog(
+                  context,
+                  contentType: ReportContentType.storefront,
+                  contentId: profile.vendorUserId,
+                  subject: name,
+                );
+              } else if (value == 'block') {
+                final blocked = await confirmAndBlock(context, userId: profile.vendorUserId, name: name);
+                if (blocked && context.mounted) Navigator.of(context).maybePop();
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'report', child: Text('Report this supplier')),
+              PopupMenuItem(value: 'block', child: Text('Block this supplier')),
+            ],
+          ),
+        ],
+      ),
       // top: false - the AppBar already clears the top inset; this is only
       // for the bottom, which nothing else here accounts for (no
       // bottomNavigationBar on this pushed screen) and which otherwise lets

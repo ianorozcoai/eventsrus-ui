@@ -26,6 +26,7 @@ import 'features/marketplace/data/vendor_package_group_api.dart';
 import 'features/marketplace/data/vendor_package_image_api.dart';
 import 'features/notifications/data/device_token_api.dart';
 import 'features/planner/data/event_api.dart';
+import 'features/moderation/data/moderation_api.dart';
 import 'features/profile/data/user_api.dart';
 import 'features/reviews/data/review_api.dart';
 import 'features/subscription/data/subscription_api.dart';
@@ -96,6 +97,7 @@ void main() async {
         Provider<VendorLegalDocumentApi>(create: (_) => VendorLegalDocumentApi(apiClient)),
         Provider<DeviceTokenApi>(create: (_) => DeviceTokenApi(apiClient)),
         Provider<UserApi>(create: (_) => UserApi(apiClient)),
+        Provider<ModerationApi>(create: (_) => ModerationApi(apiClient)),
         Provider<SupportTicketApi>(create: (_) => SupportTicketApi(apiClient)),
         Provider<ReviewApi>(create: (_) => ReviewApi(apiClient)),
         Provider<CoordinatorApi>(create: (_) => CoordinatorApi(apiClient)),
