@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../moderation/data/moderation_models.dart';
+import '../../moderation/presentation/moderation_actions.dart';
 import '../../reviews/data/models/review.dart';
 import '../../reviews/presentation/review_dialog.dart';
 import '../../reviews/presentation/vendor_reviews_screen.dart';
@@ -431,6 +433,21 @@ class _ReviewPreviewCard extends StatelessWidget {
                   ),
                 ),
                 StarRatingRow(rating: review.rating.toDouble()),
+                // Report a review (Google Play: users must be able to flag content).
+                // Only a note to the admin; nothing is hidden by it.
+                PopupMenuButton<String>(
+                  tooltip: 'More',
+                  padding: EdgeInsets.zero,
+                  onSelected: (_) => reportWithDialog(
+                    context,
+                    contentType: ReportContentType.review,
+                    contentId: review.id,
+                    subject: 'this review',
+                  ),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'report', child: Text('Report this review')),
+                  ],
+                ),
               ],
             ),
             const SizedBox(height: 6),

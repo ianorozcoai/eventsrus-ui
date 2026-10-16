@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../marketplace/data/models/vendor_public_profile.dart';
 import '../../marketplace/data/vendor_directory_api.dart';
 import '../../marketplace/presentation/lifecycle_widgets.dart';
+import '../../moderation/data/moderation_models.dart';
+import '../../moderation/presentation/moderation_actions.dart';
 import '../../vendor/data/vendor_settings_api.dart';
 import 'review_dialog.dart';
 
@@ -140,6 +142,19 @@ class _VendorReviewsScreenState extends State<VendorReviewsScreen> {
                             ),
                           ),
                           StarRatingRow(rating: review.rating.toDouble()),
+                          PopupMenuButton<String>(
+                            tooltip: 'More',
+                            padding: EdgeInsets.zero,
+                            onSelected: (_) => reportWithDialog(
+                              context,
+                              contentType: ReportContentType.review,
+                              contentId: review.id,
+                              subject: 'this review',
+                            ),
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(value: 'report', child: Text('Report this review')),
+                            ],
+                          ),
                         ],
                       ),
                       if (review.eventName != null || review.eventDate != null)
