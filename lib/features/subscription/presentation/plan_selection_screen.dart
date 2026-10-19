@@ -5,7 +5,7 @@ import '../../../core/network/api_exception.dart';
 import '../../auth/state/auth_controller.dart';
 import '../data/models/subscription_status_response.dart';
 import '../data/subscription_api.dart';
-import 'widgets/subscription_plan_picker.dart';
+import 'widgets/subscription_plan_picker.dart' show SubscriptionPlanPicker, externalPaymentsAllowedOnThisPlatform;
 
 /// Plan-selection / paywall screen for vendors. Mirrors eventsrus-web's
 /// planSelectionModal + proPlanPickerForm fragments: a billing-cycle picker
@@ -163,9 +163,13 @@ class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            widget.forced
-                                ? 'Pick a billing cycle and pay via PayPal or GCash to get full access.'
-                                : 'Billed in PHP. Pay via PayPal or GCash. Cancel anytime.',
+                            !externalPaymentsAllowedOnThisPlatform()
+                                // Android: no purchase and no pointer to other payment methods
+                                // (Google Play Payments policy) until Play Billing is built.
+                                ? 'Your plan is managed here.'
+                                : widget.forced
+                                    ? 'Pick a billing cycle and pay via PayPal or GCash to get full access.'
+                                    : 'Billed in PHP. Pay via PayPal or GCash. Cancel anytime.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                           const SizedBox(height: 20),
