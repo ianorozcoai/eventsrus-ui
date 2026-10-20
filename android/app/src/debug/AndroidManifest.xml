@@ -4,4 +4,8 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- DEBUG BUILDS ONLY (this file is not part of release builds): lets a phone talk to a
+         backend running on the developer's PC over plain http (via `adb reverse`), for local
+         testing. Release builds keep Android's default of blocking plain http. -->
+    <application android:usesCleartextTraffic="true" />
 </manifest>
