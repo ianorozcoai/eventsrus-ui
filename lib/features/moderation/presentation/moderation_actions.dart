@@ -128,7 +128,7 @@ Future<bool> confirmAndBlock(BuildContext context, {required int userId, require
       content: const Text(
         'You and this person will no longer be able to message each other. '
         'Your earlier messages stay as they are, and they are not told you blocked them. '
-        'You can unblock them later from Settings.',
+        'You can unblock them later: tap the three dots at the top, then Blocked users.',
       ),
       actions: [
         TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
