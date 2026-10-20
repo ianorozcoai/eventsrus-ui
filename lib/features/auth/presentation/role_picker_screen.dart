@@ -31,7 +31,12 @@ class RolePickerScreen extends StatelessWidget {
                   Text(
                     'What brings you here today?',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    // Explicit dark text: this screen is always white, but the heading would
+                    // otherwise take the phone's dark-mode light text colour and vanish.
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -116,7 +121,13 @@ class _RoleCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
