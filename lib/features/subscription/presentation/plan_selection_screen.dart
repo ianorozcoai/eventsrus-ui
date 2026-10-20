@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../auth/state/auth_controller.dart';
+import '../../profile/presentation/delete_account_screen.dart';
 import '../data/models/subscription_status_response.dart';
 import '../data/subscription_api.dart';
 import 'widgets/subscription_plan_picker.dart' show SubscriptionPlanPicker, externalPaymentsAllowedOnThisPlatform;
@@ -140,6 +141,24 @@ class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
               icon: const Icon(Icons.logout),
               tooltip: 'Log out',
               onPressed: _confirmLogout,
+            ),
+          // Google Play requires an in-app way to delete the account for EVERY user. A new
+          // supplier with no plan is held on this screen (see lib/app/auth_gate.dart), where
+          // the shared header menu is not available, so it needs its own entry here.
+          if (widget.forced)
+            PopupMenuButton<String>(
+              key: const Key('plan-screen-more-menu'),
+              tooltip: 'More',
+              onSelected: (value) {
+                if (value == 'delete-account') {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+                  );
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'delete-account', child: Text('Delete account')),
+              ],
             ),
         ],
       ),
