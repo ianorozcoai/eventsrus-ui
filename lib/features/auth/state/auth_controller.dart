@@ -6,6 +6,7 @@ import '../../../core/network/api_exception.dart';
 import '../../../core/notifications/push_notification_service.dart';
 import '../../../core/storage/secure_token_storage.dart';
 import '../../notifications/data/device_token_api.dart';
+import '../../subscription/data/play_billing_gateway.dart';
 import '../data/auth_api.dart';
 import '../data/google_auth_gateway.dart';
 import '../data/models/auth_response.dart';
@@ -166,6 +167,10 @@ class AuthController extends ChangeNotifier {
     }
     await _storage.clear();
     await GoogleAuthGateway.instance.signOut();
+    // Detach RevenueCat from this account so the next person on the phone starts clean.
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await RevenueCatPlayBillingGateway.instance.logOut();
+    }
     token = null;
     _refreshToken = null;
     role = null;

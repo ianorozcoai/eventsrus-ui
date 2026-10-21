@@ -29,6 +29,7 @@ import 'features/planner/data/event_api.dart';
 import 'features/moderation/data/moderation_api.dart';
 import 'features/profile/data/user_api.dart';
 import 'features/reviews/data/review_api.dart';
+import 'features/subscription/data/play_billing_gateway.dart';
 import 'features/subscription/data/subscription_api.dart';
 import 'features/support/data/support_ticket_api.dart';
 import 'features/vendor/data/google_calendar_api.dart';
@@ -74,6 +75,7 @@ void main() async {
         ChangeNotifierProvider<ThemeController>.value(value: themeController),
         Provider<VendorApi>(create: (_) => VendorApi(apiClient)),
         Provider<SubscriptionApi>(create: (_) => SubscriptionApi(apiClient)),
+        Provider<PlayBillingGateway>.value(value: RevenueCatPlayBillingGateway.instance),
         Provider<EventApi>(create: (_) => EventApi(apiClient)),
         Provider<ConversationApi>(create: (_) => ConversationApi(apiClient)),
         Provider<QuotationApi>(create: (_) => QuotationApi(apiClient)),

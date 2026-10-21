@@ -10,6 +10,26 @@ void main() {
     expect(AppConfig.backendBaseUrl, 'http://localhost:8080');
   });
 
+  group('RevenueCat key', () {
+    test('empty key means not configured', () {
+      expect(AppConfig.usableRevenueCatKey('', allowTestStore: false), isNull);
+      expect(AppConfig.usableRevenueCatKey('   ', allowTestStore: true), isNull);
+    });
+
+    test('a test_ key is ignored unless ALLOW_TEST_STORE is set', () {
+      expect(AppConfig.usableRevenueCatKey('test_abc', allowTestStore: false), isNull);
+      expect(AppConfig.usableRevenueCatKey('test_abc', allowTestStore: true), 'test_abc');
+    });
+
+    test('a public Android key is used as is', () {
+      expect(AppConfig.usableRevenueCatKey('goog_abc', allowTestStore: false), 'goog_abc');
+    });
+
+    test('no key is supplied in the test build', () {
+      expect(AppConfig.revenueCatApiKey, isNull);
+    });
+  });
+
   test('googleWebClientId is the Web-application OAuth client the backend verifies against', () {
     expect(AppConfig.googleWebClientId, endsWith('.apps.googleusercontent.com'));
   });

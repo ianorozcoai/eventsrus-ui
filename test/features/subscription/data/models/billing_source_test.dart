@@ -12,6 +12,7 @@ void main() {
     expect(BillingSource.freeGrant.toApi(), 'FREE_GRANT');
     expect(BillingSource.paypal.toApi(), 'PAYPAL');
     expect(BillingSource.gcash.toApi(), 'GCASH');
+    expect(BillingSource.googlePlay.toApi(), 'GOOGLE_PLAY');
   });
 
   test('fromApiNullable passes through null and parses otherwise', () {

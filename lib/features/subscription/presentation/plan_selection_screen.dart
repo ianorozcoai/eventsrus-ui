@@ -183,9 +183,9 @@ class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
                           const SizedBox(height: 8),
                           Text(
                             !externalPaymentsAllowedOnThisPlatform()
-                                // Android: no purchase and no pointer to other payment methods
-                                // (Google Play Payments policy) until Play Billing is built.
-                                ? 'Your plan is managed here.'
+                                // Android: Google Play Billing only, no pointer to other payment
+                                // methods (Google Play Payments policy).
+                                ? 'Subscribe with Google Play. Cancel anytime in Google Play.'
                                 : widget.forced
                                     ? 'Pick a billing cycle and pay via PayPal or GCash to get full access.'
                                     : 'Billed in PHP. Pay via PayPal or GCash. Cancel anytime.',

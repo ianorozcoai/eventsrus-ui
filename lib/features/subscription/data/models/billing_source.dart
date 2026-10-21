@@ -1,5 +1,5 @@
 /// Mirrors eventsrus-backend's {@code com.backend.eventsrus.enums.BillingSource}.
-enum BillingSource { freeGrant, paypal, gcash }
+enum BillingSource { freeGrant, paypal, gcash, googlePlay }
 
 extension BillingSourceApi on BillingSource {
   String toApi() {
@@ -10,6 +10,8 @@ extension BillingSourceApi on BillingSource {
         return 'PAYPAL';
       case BillingSource.gcash:
         return 'GCASH';
+      case BillingSource.googlePlay:
+        return 'GOOGLE_PLAY';
     }
   }
 
@@ -21,6 +23,8 @@ extension BillingSourceApi on BillingSource {
         return 'PayPal';
       case BillingSource.gcash:
         return 'GCash';
+      case BillingSource.googlePlay:
+        return 'Google Play';
     }
   }
 
@@ -32,6 +36,8 @@ extension BillingSourceApi on BillingSource {
         return BillingSource.paypal;
       case 'GCASH':
         return BillingSource.gcash;
+      case 'GOOGLE_PLAY':
+        return BillingSource.googlePlay;
       default:
         throw FormatException('Unknown billing source: $value');
     }

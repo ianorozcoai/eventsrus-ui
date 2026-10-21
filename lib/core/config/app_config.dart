@@ -17,6 +17,31 @@ class AppConfig {
     return 'http://localhost:8080';
   }
 
+  // RevenueCat PUBLIC Android SDK key (starts with goog_), supplied at build time:
+  // flutter build appbundle --dart-define=RC_API_KEY=goog_xxx
+  // Never hard-code it and never commit it. A test_ key (RevenueCat Test Store)
+  // is ignored unless the build also sets --dart-define=ALLOW_TEST_STORE=true,
+  // so a release build can never ship with the fake store by accident.
+  static const String _revenueCatApiKey = String.fromEnvironment('RC_API_KEY');
+  static const bool _allowTestStore = bool.fromEnvironment('ALLOW_TEST_STORE');
+
+  /// The key to configure purchases_flutter with, or null when none is usable
+  /// (the plan screen then shows its safe "not available yet" state).
+  static String? get revenueCatApiKey =>
+      usableRevenueCatKey(_revenueCatApiKey, allowTestStore: _allowTestStore);
+
+  static String? usableRevenueCatKey(String key, {required bool allowTestStore}) {
+    final trimmed = key.trim();
+    if (trimmed.isEmpty) return null;
+    if (trimmed.startsWith('test_') && !allowTestStore) return null;
+    return trimmed;
+  }
+
+  // Package name Google Play knows the app by, and the subscription product id
+  // created in Play Console - used for the "Manage subscription" deep link.
+  static const String androidPackageName = 'com.eventsrus.eventsrus_ui';
+  static const String playSubscriptionId = 'supplier_pro';
+
   static const String googleWebClientId =
       '590594963033-29a013v91o79jnf72pkcdnvf6ue3egej.apps.googleusercontent.com';
 

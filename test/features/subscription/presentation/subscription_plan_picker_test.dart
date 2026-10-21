@@ -1,10 +1,14 @@
 import 'package:eventsrus_ui/features/subscription/data/models/subscription_status_response.dart';
+import 'package:eventsrus_ui/features/subscription/data/play_billing_gateway.dart';
+import 'package:eventsrus_ui/features/subscription/data/subscription_api.dart';
 import 'package:eventsrus_ui/features/subscription/presentation/widgets/subscription_plan_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 const _status = SubscriptionStatusResponse(
+  userId: 7,
   plan: null,
   expiresAt: null,
   expiringSoon: false,
@@ -15,21 +19,44 @@ const _status = SubscriptionStatusResponse(
   annualPrice: 15000,
 );
 
+class _FakeApi implements SubscriptionApi {
+  @override
+  Future<SubscriptionStatusResponse> getStatus() async => _status;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _UnavailableGateway implements PlayBillingGateway {
+  @override
+  Future<List<PlayOffer>> loadOffers(String appUserId) async => throw const PlayBillingUnavailable('test');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 Future<void> _pump(WidgetTester tester, {bool? externalPaymentsAllowed}) async {
   tester.view.physicalSize = const Size(800, 2000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(MaterialApp(
-    home: Scaffold(
-      body: SingleChildScrollView(
-        child: SubscriptionPlanPicker(
-          status: _status,
-          onStatusChanged: (_) {},
-          externalPaymentsAllowed: externalPaymentsAllowed,
+  await tester.pumpWidget(MultiProvider(
+    providers: [
+      Provider<SubscriptionApi>.value(value: _FakeApi()),
+      Provider<PlayBillingGateway>.value(value: _UnavailableGateway()),
+    ],
+    child: MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: SubscriptionPlanPicker(
+            status: _status,
+            onStatusChanged: (_) {},
+            externalPaymentsAllowed: externalPaymentsAllowed,
+          ),
         ),
       ),
     ),
   ));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -38,13 +65,14 @@ void main() {
 
     expect(find.text('Continue with PayPal'), findsOneWidget);
     expect(find.text('Pay with GCash'), findsOneWidget);
-    expect(find.byKey(const Key('no-in-app-purchase-notice')), findsNothing);
+    expect(find.byKey(const Key('play-not-available')), findsNothing);
   });
 
-  testWidgets('on Android, shows no purchase options and no pointer to other payment methods', (tester) async {
+  testWidgets('on Android, shows the Play Billing flow and no pointer to other payment methods', (tester) async {
     await _pump(tester, externalPaymentsAllowed: false);
 
-    expect(find.byKey(const Key('no-in-app-purchase-notice')), findsOneWidget);
+    // The fake store is unavailable here, so this is the safe not-available state.
+    expect(find.byKey(const Key('play-not-available')), findsOneWidget);
     expect(find.text('Continue with PayPal'), findsNothing);
     expect(find.text('Debit or Credit Card'), findsNothing);
     expect(find.text('Pay with GCash'), findsNothing);
@@ -60,7 +88,7 @@ void main() {
     try {
       expect(externalPaymentsAllowedOnThisPlatform(), isFalse);
       await _pump(tester);
-      expect(find.byKey(const Key('no-in-app-purchase-notice')), findsOneWidget);
+      expect(find.byKey(const Key('play-not-available')), findsOneWidget);
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }

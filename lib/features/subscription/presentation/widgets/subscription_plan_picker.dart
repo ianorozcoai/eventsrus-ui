@@ -11,13 +11,13 @@ import '../../data/models/billing_cycle.dart';
 import '../../data/models/create_subscription_request.dart';
 import '../../data/models/subscription_status_response.dart';
 import '../../data/subscription_api.dart';
+import 'play_billing_plan_picker.dart';
 
 /// Google Play's Payments policy requires in-app subscriptions bought on
 /// Android to use Google Play Billing, and forbids steering users to another
-/// payment method. Until Play Billing is built (see docs/play-billing-design.md),
-/// the Android app therefore offers no purchase at all: no PayPal, no GCash,
-/// and no "pay on our website" wording. A supplier who already has a plan
-/// (bought elsewhere) just uses the app as usual.
+/// payment method. So on Android this widget shows the Play Billing flow
+/// (PlayBillingPlanPicker) instead of PayPal/GCash, with no "pay on our
+/// website" wording (see docs/play-billing-design.md).
 bool externalPaymentsAllowedOnThisPlatform() => defaultTargetPlatform != TargetPlatform.android;
 
 /// The billing-cycle picker + PayPal/GCash payment buttons - shared between
@@ -88,23 +88,7 @@ class _SubscriptionPlanPickerState extends State<SubscriptionPlanPicker> {
   Widget build(BuildContext context) {
     final status = widget.status;
     if (!(widget.externalPaymentsAllowed ?? externalPaymentsAllowedOnThisPlatform())) {
-      return Card(
-        key: const Key('no-in-app-purchase-notice'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Subscriptions in the app', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              const Text(
-                'Buying a subscription in the app is not available yet. '
-                'If you already have an active plan, it works here as usual.',
-              ),
-            ],
-          ),
-        ),
-      );
+      return PlayBillingPlanPicker(onStatusChanged: widget.onStatusChanged);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

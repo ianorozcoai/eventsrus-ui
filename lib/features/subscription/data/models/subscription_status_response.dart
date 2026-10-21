@@ -4,6 +4,8 @@ import 'billing_source.dart';
 
 /// Mirrors eventsrus-backend's {@code com.backend.eventsrus.dto.SubscriptionStatusResponse}.
 class SubscriptionStatusResponse {
+  // Backend user id - used as the RevenueCat app_user_id for Google Play purchases.
+  final int? userId;
   final PlanTier? plan;
   final DateTime? expiresAt;
   final bool expiringSoon;
@@ -29,6 +31,7 @@ class SubscriptionStatusResponse {
   final String? gcashRejectionReason;
 
   const SubscriptionStatusResponse({
+    this.userId,
     required this.plan,
     required this.expiresAt,
     required this.expiringSoon,
@@ -52,6 +55,7 @@ class SubscriptionStatusResponse {
 
   factory SubscriptionStatusResponse.fromJson(Map<String, dynamic> json) =>
       SubscriptionStatusResponse(
+        userId: (json['userId'] as num?)?.toInt(),
         plan: PlanTierApi.fromApiNullable(json['plan'] as String?),
         expiresAt: json['expiresAt'] == null
             ? null
