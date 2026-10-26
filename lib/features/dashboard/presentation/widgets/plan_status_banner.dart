@@ -17,8 +17,8 @@ import '../../../subscription/data/subscription_api.dart';
 /// flag, unlike web's WebSession.PAYWALL_SHOWN) - they reappear next time
 /// this widget remounts (e.g. next login), which is an acceptable mobile
 /// simplification of "keeps reappearing every login until resolved".
-/// The free-trial banner only appears in the trial's last week (same as the website's popup).
-const int _trialReminderDays = 7;
+/// The free-trial banner only appears in the trial's last two weeks (same as the website's popup).
+const int _trialReminderDays = 14;
 
 class PlanStatusBanner extends StatefulWidget {
   const PlanStatusBanner({super.key});
