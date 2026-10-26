@@ -79,6 +79,14 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
 
     final dashboard = _dashboard!;
     final colorScheme = Theme.of(context).colorScheme;
+    final stats = <_Stat>[
+      _Stat('New leads', '${dashboard.newLeadsCount}', Icons.person_search_outlined, const Color(0xFF0C83FF)),
+      _Stat('New messages', '${dashboard.newMessagesCount}', Icons.mail_outline, const Color(0xFF7C3AED)),
+      _Stat('New quotations', '${dashboard.newQuotationsCount}', Icons.request_quote_outlined, const Color(0xFFD97706)),
+      _Stat('New bookings', '${dashboard.newBookingsCount}', Icons.event_available_outlined, const Color(0xFF16A34A)),
+      _Stat('Upcoming events', '${dashboard.upcomingEventsCount}', Icons.calendar_month_outlined, const Color(0xFF0D9488)),
+      _Stat('Cancellations', '${dashboard.cancellationsCount}', Icons.cancel_outlined, const Color(0xFFDC2626)),
+    ];
 
     return RefreshIndicator(
       onRefresh: _load,
@@ -127,51 +135,103 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
                   ],
                 ),
               ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _StatTile(
-                  label: 'NEW LEADS',
-                  value: '${dashboard.newLeadsCount}',
-                  icon: Icons.person_search_outlined,
+            // Income is the number a supplier checks first, so it leads on its own; the six
+            // activity counts sit below in a two-column grid so they fit on one screen.
+            _IncomeCard(value: '₱${dashboard.totalIncome.toStringAsFixed(0)}'),
+            const SizedBox(height: 12),
+            for (var i = 0; i < stats.length; i += 2)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: _StatTile(stat: stats[i])),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: i + 1 < stats.length ? _StatTile(stat: stats[i + 1]) : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                _StatTile(
-                  label: 'NEW MESSAGES',
-                  value: '${dashboard.newMessagesCount}',
-                  icon: Icons.mail_outline,
-                ),
-                const SizedBox(height: 12),
-                _StatTile(
-                  label: 'NEW QUOTATIONS',
-                  value: '${dashboard.newQuotationsCount}',
-                  icon: Icons.request_quote_outlined,
-                ),
-                const SizedBox(height: 12),
-                _StatTile(
-                  label: 'NEW BOOKINGS',
-                  value: '${dashboard.newBookingsCount}',
-                  icon: Icons.event_available_outlined,
-                ),
-                const SizedBox(height: 12),
-                _StatTile(
-                  label: 'UPCOMING EVENTS',
-                  value: '${dashboard.upcomingEventsCount}',
-                  icon: Icons.calendar_month_outlined,
-                ),
-                const SizedBox(height: 12),
-                _StatTile(
-                  label: 'TOTAL INCOME',
-                  value: '₱${dashboard.totalIncome.toStringAsFixed(0)}',
-                  icon: Icons.payments_outlined,
-                ),
-                const SizedBox(height: 12),
-                _StatTile(
-                  label: 'CANCELLATIONS',
-                  value: '${dashboard.cancellationsCount}',
-                  icon: Icons.cancel_outlined,
-                ),
-              ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Same deep violet as the bottom nav (vendor_shell.dart): the one brand accent, used for the
+// featured income card; each activity count gets its own soft tint so they scan apart quickly.
+const _statAccent = Color(0xFF5B21B6);
+
+class _Stat {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _Stat(this.label, this.value, this.icon, this.color);
+}
+
+/// Rounded icon chip: a soft tint of [color] behind the icon (works on light and dark surfaces).
+class _IconChip extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+
+  const _IconChip({required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Icon(icon, size: 20, color: color),
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  final _Stat stat;
+
+  const _StatTile({required this.stat});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      label: '${stat.label}: ${stat.value}',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _IconChip(icon: stat.icon, color: stat.color),
+            const SizedBox(height: 10),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                stat.value,
+                style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, height: 1.1),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              stat.label,
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ],
         ),
@@ -180,52 +240,66 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
   }
 }
 
-// Same deep violet as the bottom nav (vendor_shell.dart) - one consistent
-// brand accent rather than a different color per card, kept deliberately
-// restrained for a "simple but elegant" look.
-const _statAccent = Color(0xFF5B21B6);
-
-class _StatTile extends StatelessWidget {
-  final String label;
+/// The featured card: total income, on the brand violet so it is the one thing that stands out.
+class _IncomeCard extends StatelessWidget {
   final String value;
-  final IconData icon;
 
-  const _StatTile({required this.label, required this.value, required this.icon});
+  const _IncomeCard({required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  value,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+    final theme = Theme.of(context);
+    return Semantics(
+      label: 'Total income: $value',
+      excludeSemantics: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_statAccent, Color(0xFF7C3AED)],
           ),
-          Icon(icon, size: 22, color: _statAccent),
-        ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total income',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        height: 1.1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.payments_outlined, color: Colors.white),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -77,7 +77,44 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        side: BorderSide(color: colorScheme.outlineVariant),
       ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    // Softer, rounder overlays: dialogs, bottom sheets, snackbars and chips share one corner language
+    // with the cards and buttons above instead of Material's default sharp-ish shapes.
+    dialogTheme: DialogThemeData(
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
+    chipTheme: ChipThemeData(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      side: BorderSide(color: colorScheme.outlineVariant),
+    ),
+    // Page titles read as titles: slightly heavier, with comfortable line height for body copy.
+    textTheme: base.textTheme.copyWith(
+      headlineSmall: base.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+      titleLarge: base.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+      titleMedium: base.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      bodyMedium: base.textTheme.bodyMedium?.copyWith(height: 1.4),
     ),
   );
 }
