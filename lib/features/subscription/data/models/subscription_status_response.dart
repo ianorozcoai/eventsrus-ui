@@ -81,6 +81,19 @@ class SubscriptionStatusResponse {
         gcashRejectionReason: json['gcashRejectionReason'] as String?,
       );
 
+  /// True for a supplier still on the free period that came with signing up (or a promo code):
+  /// the server reports it as the grace period of a free grant. It must be worded as a free
+  /// trial, not as an expired subscription - that wording is only for suppliers who stopped paying.
+  bool get onFreeTrial => inGracePeriod && graceEndsAt != null && billingSource == BillingSource.freeGrant;
+
+  /// Whole days (rounded up, at least 1 while it still runs) left of the free trial, or null.
+  int? get freeTrialDaysLeft {
+    if (!onFreeTrial) return null;
+    final left = graceEndsAt!.difference(DateTime.now());
+    if (left.isNegative) return 0;
+    return (left.inMinutes / (24 * 60)).ceil().clamp(1, 100000);
+  }
+
   /// The flat per-cycle total price (in PHP) for [cycle], from whichever of
   /// the four `*Price` fields matches.
   int priceFor(BillingCycle cycle) {

@@ -313,7 +313,8 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
       key: const Key('play-offers'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_status?.plan != null) ...[
+        // Grace-period days are not paid time, so nothing is carried over in that case.
+        if (_status?.plan != null && _status?.inGracePeriod != true) ...[
           Text(
             key: const Key('play-early-note'),
             'Your current plan is still active. The time you have left is added on top of the plan you '

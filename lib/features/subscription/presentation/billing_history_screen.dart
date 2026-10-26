@@ -114,7 +114,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
                         _CurrentPlanCard(status: _status!),
                         const SizedBox(height: 16),
                         Text(
-                          'Renew Subscription',
+                          _status!.onFreeTrial ? 'Choose your plan' : 'Renew Subscription',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 12),
@@ -183,6 +183,12 @@ class _CurrentPlanCard extends StatelessWidget {
     } else if (!hasPlan) {
       badgeText = 'No active plan';
       badgeColor = colorScheme.outline;
+    } else if (status.onFreeTrial) {
+      final days = status.freeTrialDaysLeft!;
+      badgeText = 'Free trial';
+      badgeColor = Colors.green;
+      dateLine = 'Your free trial ends on ${_formatDate(status.graceEndsAt!)} '
+          '($days ${days == 1 ? 'day' : 'days'} left). Choose a plan any time to keep your supplier tools.';
     } else if (status.expired) {
       badgeText = 'Expired';
       badgeColor = colorScheme.error;
