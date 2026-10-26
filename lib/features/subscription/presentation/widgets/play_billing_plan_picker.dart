@@ -62,6 +62,9 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
   String? _message;
   bool _busy = false;
 
+  /// End date of the plan the supplier had before buying, to tell the new purchase apart from it.
+  DateTime? _expiryBeforePurchase;
+
   @override
   void initState() {
     super.initState();
@@ -83,8 +86,11 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
         // on this screen would see "active plan" but never reach the dashboard.
         widget.onStatusChanged(status);
         if (!mounted) return;
-        setState(() => _phase = _Phase.alreadySubscribed);
-        return;
+        if (_renewsByItself(status)) {
+          setState(() => _phase = _Phase.alreadySubscribed);
+          return;
+        }
+        // Otherwise (free promo, GCash) paying early is allowed: the days left are added on top.
       }
       final userId = status.userId;
       if (userId == null) {
@@ -117,7 +123,16 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
     }
   }
 
+  /// A live plan that charges again by itself (Google Play or PayPal): buying a second one would
+  /// double-charge, so nothing is offered. During the grace period the old plan has lapsed, so a
+  /// new purchase is fine.
+  bool _renewsByItself(SubscriptionStatusResponse status) =>
+      status.plan != null &&
+      !status.inGracePeriod &&
+      (status.billingSource == BillingSource.googlePlay || status.billingSource == BillingSource.paypal);
+
   Future<void> _buy() async {
+    _expiryBeforePurchase = _status?.expiresAt;
     final offer = _offers.firstWhere((o) => o.cycle == _selected);
     setState(() {
       _busy = true;
@@ -142,6 +157,7 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
   }
 
   Future<void> _restore() async {
+    _expiryBeforePurchase = _status?.expiresAt;
     setState(() {
       _busy = true;
       _message = null;
@@ -169,7 +185,14 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
       try {
         final status = await api.getStatus();
         if (!mounted) return;
-        if (status.plan != null) {
+        // A supplier paying early already has a plan (promo, GCash), so "has a plan" is not enough:
+        // the new Google Play plan is in once the server reports Google Play with a later end date.
+        final before = _expiryBeforePurchase;
+        final activated = status.plan != null &&
+            (before == null ||
+                (status.billingSource == BillingSource.googlePlay &&
+                    (status.expiresAt == null || status.expiresAt!.isAfter(before))));
+        if (activated) {
           _status = status;
           widget.onStatusChanged(status);
           setState(() {
@@ -290,6 +313,15 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
       key: const Key('play-offers'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_status?.plan != null) ...[
+          Text(
+            key: const Key('play-early-note'),
+            'Your current plan is still active. The time you have left is added on top of the plan you '
+            'choose, so nothing is lost by paying early.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+        ],
         for (final offer in _offers)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),

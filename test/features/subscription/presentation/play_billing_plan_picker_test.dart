@@ -10,11 +10,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
-SubscriptionStatusResponse _status({PlanTier? plan, BillingSource? source, int? userId = 42}) =>
+SubscriptionStatusResponse _status({
+  PlanTier? plan,
+  BillingSource? source,
+  int? userId = 42,
+  DateTime? expiresAt,
+}) =>
     SubscriptionStatusResponse(
       userId: userId,
       plan: plan,
-      expiresAt: null,
+      expiresAt: expiresAt,
       expiringSoon: false,
       expired: false,
       billingSource: source,
@@ -144,6 +149,57 @@ void main() {
     );
 
     expect(changed?.plan, PlanTier.pro);
+  });
+
+  testWidgets('a supplier on a free promo can pay early, and is told the days left are kept', (tester) async {
+    final gateway = _FakeGateway(offers: _offers);
+    await _pump(
+      tester,
+      api: _FakeApi([
+        _status(plan: PlanTier.pro, source: BillingSource.freeGrant, expiresAt: DateTime.now().add(const Duration(days: 60))),
+      ]),
+      gateway: gateway,
+    );
+
+    expect(find.byKey(const Key('play-offers')), findsOneWidget);
+    expect(find.byKey(const Key('play-early-note')), findsOneWidget);
+    expect(find.text('You already have an active plan'), findsNothing);
+    expect(gateway.loadedFor, '42');
+  });
+
+  testWidgets('paying early is only confirmed once Google Play shows up with a later end date', (tester) async {
+    final promoEnd = DateTime.now().add(const Duration(days: 60));
+    final promo = _status(plan: PlanTier.pro, source: BillingSource.freeGrant, expiresAt: promoEnd);
+    final paid = _status(
+      plan: PlanTier.pro,
+      source: BillingSource.googlePlay,
+      expiresAt: promoEnd.add(const Duration(days: 90)),
+    );
+    SubscriptionStatusResponse? changed;
+    // 1: opening the screen, 2-3: still the promo (webhook not in yet), 4: Google Play plan stacked on top.
+    final api = _FakeApi([promo, promo, promo, paid]);
+    await _pump(tester, api: api, gateway: _FakeGateway(offers: _offers), onChanged: (s) => changed = s);
+    changed = null;
+
+    await tester.tap(find.byKey(const Key('play-subscribe')));
+    await tester.pumpAndSettle();
+
+    expect(changed?.billingSource, BillingSource.googlePlay);
+    expect(find.text('You already have an active plan'), findsOneWidget);
+  });
+
+  testWidgets('a PayPal plan renews by itself, so there is nothing to buy', (tester) async {
+    final gateway = _FakeGateway(offers: _offers);
+    await _pump(
+      tester,
+      api: _FakeApi([
+        _status(plan: PlanTier.pro, source: BillingSource.paypal, expiresAt: DateTime.now().add(const Duration(days: 20))),
+      ]),
+      gateway: gateway,
+    );
+
+    expect(find.text('You already have an active plan'), findsOneWidget);
+    expect(gateway.loadedFor, isNull);
   });
 
   testWidgets('a Google Play plan also offers Manage subscription', (tester) async {
