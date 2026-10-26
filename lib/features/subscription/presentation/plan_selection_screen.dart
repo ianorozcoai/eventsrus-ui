@@ -6,7 +6,8 @@ import '../../auth/state/auth_controller.dart';
 import '../../profile/presentation/delete_account_screen.dart';
 import '../data/models/subscription_status_response.dart';
 import '../data/subscription_api.dart';
-import 'widgets/subscription_plan_picker.dart' show SubscriptionPlanPicker, externalPaymentsAllowedOnThisPlatform;
+import 'widgets/subscription_plan_picker.dart'
+    show SubscriptionPlanPicker, externalPaymentsAllowedOnThisPlatform;
 
 /// Plan-selection / paywall screen for vendors. Mirrors eventsrus-web's
 /// planSelectionModal + proPlanPickerForm fragments: a billing-cycle picker
@@ -78,7 +79,10 @@ class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
   // vendor the instant they submit.
   Future<void> _onStatusChanged(SubscriptionStatusResponse status) async {
     setState(() => _status = status);
-    await context.read<AuthController>().applyPlanUpdate(plan: status.plan, planExpiresAt: status.expiresAt);
+    await context.read<AuthController>().applyPlanUpdate(
+      plan: status.plan,
+      planExpiresAt: status.expiresAt,
+    );
   }
 
   void _openBillingHistory() {
@@ -96,8 +100,14 @@ class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
         title: const Text('Log out?'),
         content: const Text("You'll need to sign in again to continue."),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Log out')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Log out'),
+          ),
         ],
       ),
     );
@@ -152,12 +162,17 @@ class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
               onSelected: (value) {
                 if (value == 'delete-account') {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DeleteAccountScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const DeleteAccountScreen(),
+                    ),
                   );
                 }
               },
               itemBuilder: (_) => const [
-                PopupMenuItem(value: 'delete-account', child: Text('Delete account')),
+                PopupMenuItem(
+                  value: 'delete-account',
+                  child: Text('Delete account'),
+                ),
               ],
             ),
         ],
@@ -168,34 +183,42 @@ class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
           child: _loadingStatus
               ? const CircularProgressIndicator()
               : _status == null
-                  ? _LoadErrorView(message: _errorMessage, onRetry: _loadStatus)
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            widget.forced ? 'Choose your PRO plan' : 'Upgrade your plan',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            !externalPaymentsAllowedOnThisPlatform()
-                                // Android: Google Play Billing only, no pointer to other payment
-                                // methods (Google Play Payments policy).
-                                ? 'Subscribe with Google Play. Cancel anytime in Google Play.'
-                                : widget.forced
-                                    ? 'Pick a billing cycle and pay via PayPal or GCash to get full access.'
-                                    : 'Billed in PHP. Pay via PayPal or GCash. Cancel anytime.',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 20),
-                          SubscriptionPlanPicker(status: _status!, onStatusChanged: _onStatusChanged),
-                        ],
-                      ),
+              ? _LoadErrorView(message: _errorMessage, onRetry: _loadStatus)
+              // Top-aligned: a plan card floating in the middle of an empty screen reads as a blank page.
+              : Align(
+                  alignment: Alignment.topCenter,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          widget.forced
+                              ? 'Choose your PRO plan'
+                              : 'Upgrade your plan',
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          !externalPaymentsAllowedOnThisPlatform()
+                              // Android: Google Play Billing only, no pointer to other payment
+                              // methods (Google Play Payments policy).
+                              ? 'Choose a plan to unlock your supplier tools.'
+                              : widget.forced
+                              ? 'Pick a billing cycle and pay via PayPal or GCash to get full access.'
+                              : 'Billed in PHP. Pay via PayPal or GCash. Cancel anytime.',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                        const SizedBox(height: 20),
+                        SubscriptionPlanPicker(
+                          status: _status!,
+                          onStatusChanged: _onStatusChanged,
+                        ),
+                      ],
                     ),
+                  ),
+                ),
         ),
       ),
     );
@@ -215,7 +238,11 @@ class _LoadErrorView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error, size: 40),
+          Icon(
+            Icons.error_outline,
+            color: Theme.of(context).colorScheme.error,
+            size: 40,
+          ),
           const SizedBox(height: 12),
           Text(
             message ?? 'Could not load plan pricing.',

@@ -1,4 +1,4 @@
-import 'package:eventsrus_ui/core/network/api_exception.dart';
+﻿import 'package:eventsrus_ui/core/network/api_exception.dart';
 import 'package:eventsrus_ui/features/auth/data/models/plan_tier.dart';
 import 'package:eventsrus_ui/features/subscription/data/models/billing_cycle.dart';
 import 'package:eventsrus_ui/features/subscription/data/models/billing_source.dart';
@@ -45,12 +45,14 @@ class _FakeGateway implements PlayBillingGateway {
   String? loadedFor;
   PlayOffer? purchased;
   int restores = 0;
+  int loadCount = 0;
 
   _FakeGateway({this.offers = const [], this.unavailable = false, this.outcome = PlayPurchaseOutcome.purchased});
 
   @override
   Future<List<PlayOffer>> loadOffers(String appUserId) async {
     loadedFor = appUserId;
+    loadCount++;
     if (unavailable) throw const PlayBillingUnavailable('no key');
     return offers;
   }
@@ -69,9 +71,9 @@ class _FakeGateway implements PlayBillingGateway {
 }
 
 const _offers = [
-  PlayOffer(cycle: BillingCycle.quarterly, priceString: '₱4,500.00'),
-  PlayOffer(cycle: BillingCycle.semiAnnual, priceString: '₱7,500.00'),
-  PlayOffer(cycle: BillingCycle.annual, priceString: '₱15,000.00'),
+  PlayOffer(cycle: BillingCycle.quarterly, priceString: 'â‚±4,500.00'),
+  PlayOffer(cycle: BillingCycle.semiAnnual, priceString: 'â‚±7,500.00'),
+  PlayOffer(cycle: BillingCycle.annual, priceString: 'â‚±15,000.00'),
 ];
 
 Future<void> _pump(
@@ -109,9 +111,9 @@ void main() {
     await _pump(tester, api: _FakeApi([_status()]), gateway: gateway);
 
     expect(gateway.loadedFor, '42'); // app_user_id = backend user id
-    expect(find.text('₱4,500.00'), findsOneWidget);
-    expect(find.text('₱7,500.00'), findsOneWidget);
-    expect(find.text('₱15,000.00'), findsOneWidget);
+    expect(find.text('â‚±4,500.00'), findsOneWidget);
+    expect(find.text('â‚±7,500.00'), findsOneWidget);
+    expect(find.text('â‚±15,000.00'), findsOneWidget);
     expect(find.text('Subscribe with Google Play'), findsOneWidget);
     expect(find.text('Manage subscription'), findsOneWidget);
     expect(find.textContaining('PayPal'), findsNothing);
@@ -132,6 +134,18 @@ void main() {
     expect(gateway.loadedFor, isNull);
   });
 
+  testWidgets('a plan found on the server is reported to the app so the supplier can leave this screen', (tester) async {
+    SubscriptionStatusResponse? changed;
+    await _pump(
+      tester,
+      api: _FakeApi([_status(plan: PlanTier.pro, source: BillingSource.googlePlay)]),
+      gateway: _FakeGateway(offers: _offers),
+      onChanged: (s) => changed = s,
+    );
+
+    expect(changed?.plan, PlanTier.pro);
+  });
+
   testWidgets('a Google Play plan also offers Manage subscription', (tester) async {
     await _pump(
       tester,
@@ -147,6 +161,36 @@ void main() {
 
     expect(find.byKey(const Key('play-not-available')), findsOneWidget);
     expect(find.text('Subscribe with Google Play'), findsNothing);
+  });
+
+  testWidgets('the not-available state always gives the supplier something to do next', (tester) async {
+    await _pump(tester, api: _FakeApi([_status()]), gateway: _FakeGateway(unavailable: true));
+
+    // A supplier held on this screen must never meet a dead end: explain, retry, or reach support.
+    expect(find.text("We couldn't load the plans"), findsOneWidget);
+    expect(find.byKey(const Key('play-try-again')), findsOneWidget);
+    expect(find.byKey(const Key('play-contact-support')), findsOneWidget);
+    expect(find.textContaining('support@eventsrus.app'), findsOneWidget);
+    // "Manage subscription" is meaningless for someone who has not subscribed.
+    expect(find.byKey(const Key('play-manage-subscription')), findsNothing);
+  });
+
+  testWidgets('Try again from the not-available state asks for the plans again', (tester) async {
+    final gateway = _FakeGateway(offers: const []);
+    await _pump(tester, api: _FakeApi([_status(), _status()]), gateway: gateway);
+    expect(find.byKey(const Key('play-not-available')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('play-try-again')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('play-not-available')), findsOneWidget);
+    expect(gateway.loadCount, 2);
+  });
+
+  test('the support link is a mailto to the EventsRUs support address', () {
+    final uri = playSupportMailUri();
+    expect(uri.scheme, 'mailto');
+    expect(uri.path, 'support@eventsrus.app');
   });
 
   testWidgets('an empty offering shows the safe not-available state', (tester) async {
@@ -209,6 +253,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('being activated'), findsOneWidget);
+    // Not a dead end either: the supplier can re-check or reach support.
+    expect(find.byKey(const Key('play-check-again')), findsOneWidget);
+    expect(find.byKey(const Key('play-contact-support')), findsOneWidget);
   });
 
   testWidgets('restore purchases asks the gateway', (tester) async {
@@ -228,3 +275,4 @@ void main() {
     expect(uri.queryParameters['sku'], 'supplier_pro');
   });
 }
+

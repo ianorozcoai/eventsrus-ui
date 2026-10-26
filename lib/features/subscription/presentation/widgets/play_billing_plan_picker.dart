@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -17,7 +17,15 @@ Uri playManageSubscriptionUri() => Uri.https('play.google.com', '/store/account/
       'package': AppConfig.androidPackageName,
     });
 
-enum _Phase { loading, loadError, alreadySubscribed, notAvailable, ready, activating }
+enum _Phase { loading, loadError, alreadySubscribed, notAvailable, activationPending, ready, activating }
+
+const String _supportEmail = 'support@eventsrus.app';
+
+Uri playSupportMailUri() => Uri(
+      scheme: 'mailto',
+      path: _supportEmail,
+      queryParameters: {'subject': 'EventsRUs PRO subscription help'},
+    );
 
 /// The Android purchase flow (Google Play Billing through RevenueCat). Shows
 /// only store prices, never PayPal/GCash or any pointer to paying elsewhere
@@ -70,6 +78,11 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
       if (!mounted) return;
       _status = status;
       if (status.plan != null) {
+        // The server says this supplier has a plan (bought on the web, or Google's notification
+        // arrived after the app last looked). Tell the rest of the app, otherwise a supplier held
+        // on this screen would see "active plan" but never reach the dashboard.
+        widget.onStatusChanged(status);
+        if (!mounted) return;
         setState(() => _phase = _Phase.alreadySubscribed);
         return;
       }
@@ -173,14 +186,16 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
     }
     setState(() {
       _busy = false;
-      _phase = _Phase.notAvailable;
-      _message = 'Your purchase went through and is being activated. This can take a few minutes. '
-          'Use the refresh button above to check again.';
+      _phase = _Phase.activationPending;
     });
   }
 
   Future<void> _manage() async {
     await launchUrl(playManageSubscriptionUri(), mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _contactSupport() async {
+    await launchUrl(playSupportMailUri(), mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -223,15 +238,44 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
           ],
         );
       case _Phase.notAvailable:
+        // Plans could not be loaded from Google Play (inactive plans, no Play services, no
+        // connection, store down). The supplier must always have something to do next.
         return _InfoCard(
           key: const Key('play-not-available'),
-          title: 'Subscriptions in the app',
-          body: _message ?? 'Buying a subscription in the app is not available yet. Please check back soon.',
+          title: "We couldn't load the plans",
+          body: 'We could not load the subscription plans from Google Play right now. '
+              'Please check your internet connection and that Google Play is up to date, then try again. '
+              'If it keeps happening, contact $_supportEmail and we will help you.',
           actions: [
+            FilledButton(
+              key: const Key('play-try-again'),
+              onPressed: _load,
+              child: const Text('Try again'),
+            ),
             OutlinedButton(
-              key: const Key('play-manage-subscription'),
-              onPressed: _manage,
-              child: const Text('Manage subscription'),
+              key: const Key('play-contact-support'),
+              onPressed: _contactSupport,
+              child: const Text('Contact support'),
+            ),
+          ],
+        );
+      case _Phase.activationPending:
+        return _InfoCard(
+          key: const Key('play-activation-pending'),
+          title: 'Almost there',
+          body: 'Your purchase went through and is being activated. This can take a few minutes. '
+              'Tap "Check again" to refresh. If your plan is still not active after a while, '
+              'contact $_supportEmail.',
+          actions: [
+            FilledButton(
+              key: const Key('play-check-again'),
+              onPressed: _waitForActivation,
+              child: const Text('Check again'),
+            ),
+            OutlinedButton(
+              key: const Key('play-contact-support'),
+              onPressed: _contactSupport,
+              child: const Text('Contact support'),
             ),
           ],
         );
@@ -347,3 +391,4 @@ class _InfoCard extends StatelessWidget {
     );
   }
 }
+
