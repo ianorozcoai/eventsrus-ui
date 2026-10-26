@@ -392,10 +392,11 @@ class _HeroHeader extends StatelessWidget {
                 const SizedBox(height: 8),
                 // No unconditional trial claim here on purpose - matches
                 // web's onboarding.html, which doesn't promise a free trial
-                // either. A trial only happens if the promo code below
-                // turns out to be valid (VendorOnboardingRequest.promoCode,
-                // admin-configured on the backend); everyone else lands on
-                // the paywall after signup, same as web.
+                // either. The backend itself starts every new supplier on a
+                // short free trial (7 days by default, admin setting), or the
+                // longer promo trial if the code below is valid
+                // (VendorOnboardingRequest.promoCode); the paywall only
+                // appears once that trial has run out.
                 Text(
                   'Get discovered by thousands of event planners.',
                   style: Theme.of(
