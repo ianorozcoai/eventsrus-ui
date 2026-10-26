@@ -196,11 +196,11 @@ class _CurrentPlanCard extends StatelessWidget {
     } else if (status.expiringSoon) {
       badgeText = 'Renews soon';
       badgeColor = Colors.orange;
-      dateLine = status.expiresAt == null ? null : 'Renews on ${_formatDate(status.expiresAt!)}';
+      dateLine = status.expiresAt == null ? null : 'Access until ${_formatDate(status.expiresAt!)}';
     } else {
       badgeText = 'Active';
       badgeColor = Colors.green;
-      dateLine = status.expiresAt == null ? null : 'Renews on ${_formatDate(status.expiresAt!)}';
+      dateLine = status.expiresAt == null ? null : 'Access until ${_formatDate(status.expiresAt!)}';
     }
 
     return Card(
