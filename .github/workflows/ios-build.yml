@@ -37,6 +37,11 @@ jobs:
           path: ios/Pods
           key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile', 'pubspec.lock') }}
 
+      - name: Google client id (optional, public value)
+        env:
+          GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID }}
+        run: sh tool/write_google_xcconfig.sh "$GOOGLE_IOS_CLIENT_ID"
+
       # No RC_API_KEY_IOS here: without a key the plan screen shows its safe
       # "not available" state, which is fine for a compile check.
       - name: Build iOS (no code signing)

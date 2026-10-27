@@ -10,6 +10,7 @@ import '../../notifications/data/device_token_api.dart';
 import '../../subscription/data/play_billing_gateway.dart';
 import '../data/auth_api.dart';
 import '../data/google_auth_gateway.dart';
+import '../data/models/apple_auth_request.dart';
 import '../data/models/auth_response.dart';
 import '../data/models/google_auth_request.dart';
 import '../data/models/plan_tier.dart';
@@ -103,6 +104,23 @@ class AuthController extends ChangeNotifier {
       final response = await _authApi.authenticateWithGoogle(
         GoogleAuthRequest(idToken: idToken, intent: intent?.toApi()),
       );
+      await applyAuthResponse(response);
+    } on ApiException catch (e) {
+      isLoading = false;
+      errorMessage = e.message;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Sign in with Apple (iPhone). Same session handling and error behaviour as [completeLogin].
+  Future<void> completeAppleLogin(AppleAuthRequest request) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _authApi.authenticateWithApple(request);
       await applyAuthResponse(response);
     } on ApiException catch (e) {
       isLoading = false;

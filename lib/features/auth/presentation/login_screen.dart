@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:provider/provider.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../data/apple_auth_gateway.dart';
 import '../data/google_auth_gateway.dart';
 import '../data/models/signup_intent.dart';
 import '../state/auth_controller.dart';
@@ -48,9 +51,41 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
         setState(() => _errorMessage = e.message);
       }
+    } on GoogleSignInNotConfigured {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Google sign-in is not set up on this iPhone build yet. Please use Sign in with Apple.');
     } catch (_) {
       if (!mounted) return;
       setState(() => _errorMessage = 'Google sign-in failed. Please try again.');
+    } finally {
+      if (mounted) setState(() => _signingIn = false);
+    }
+  }
+
+  /// Sign in with Apple: required next to Google sign-in on iPhone (App Store guideline 4.8).
+  Future<void> _handleAppleSignIn() async {
+    setState(() {
+      _errorMessage = null;
+      _signingIn = true;
+    });
+    try {
+      final request = await AppleAuthGateway.instance.signIn(intent: widget.intent.toApi());
+      if (request == null) return; // dismissed
+      if (!mounted) return;
+      final authController = context.read<AuthController>();
+      try {
+        await authController.completeAppleLogin(request);
+        if (!mounted) return;
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      } on ApiException catch (e) {
+        if (!mounted) return;
+        setState(() => _errorMessage = e.message);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _errorMessage = 'Apple sign-in failed. Please try again.');
     } finally {
       if (mounted) setState(() => _signingIn = false);
     }
@@ -110,6 +145,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         label: const Text('Sign in with Google'),
                       ),
                     ),
+                  if (!busy && defaultTargetPlatform == TargetPlatform.iOS) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      // Apple's own button, as their design rules require (black on a white screen).
+                      child: SignInWithAppleButton(
+                        key: const Key('apple-sign-in'),
+                        onPressed: _handleAppleSignIn,
+                        height: 48,
+                        borderRadius: const BorderRadius.all(Radius.circular(8)),
+                      ),
+                    ),
+                  ],
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 24),
                     Text(

@@ -1,0 +1,156 @@
+name: iOS TestFlight (signed, manual)
+
+# Builds a SIGNED iPhone app and uploads it to TestFlight. Started by hand only
+# (Actions > "iOS TestFlight (signed, manual)" > Run workflow).
+#
+# INERT until the secrets below exist: without them the job finishes green after
+# printing which ones are missing, and builds nothing. The owner creates the
+# secrets in GitHub (Settings > Secrets and variables > Actions) himself; no
+# secret is ever written to a file in the repository or pasted into chat.
+#
+# Repository SECRETS (names exactly):
+#   APP_STORE_CONNECT_KEY_ID      Key ID of the App Store Connect API key (e.g. ABC123DEFG)
+#   APP_STORE_CONNECT_ISSUER_ID   Issuer ID shown on the same page (a UUID)
+#   APP_STORE_CONNECT_KEY_P8      The full text of the downloaded AuthKey_XXXX.p8 file
+#   APPLE_TEAM_ID                 10-character Team ID (developer.apple.com > Membership)
+#   RC_API_KEY_IOS                RevenueCat PUBLIC iOS key (starts with appl_)
+# Optional SECRET:
+#   GOOGLE_SERVICE_INFO_PLIST_BASE64   GoogleService-Info.plist of the Firebase iOS app, base64-encoded
+#                                      (without it the app runs but push notifications stay off)
+# Repository VARIABLES (public values, optional):
+#   GOOGLE_IOS_CLIENT_ID   Google "iOS" OAuth client id (without it Google sign-in shows "not set up")
+#   BACKEND_BASE_URL       defaults to https://api.eventsrus.app
+#   WEB_BASE_URL           defaults to https://eventsrus.app
+#
+# Signing is automatic: Xcode uses the API key to create/download the certificate and
+# provisioning profile (-allowProvisioningUpdates). That needs the API key role "Admin"
+# or "App Manager" (UNVERIFIED which of the two is enough for cloud-managed certificates).
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: 'Build number for this upload (must be higher than the last one in TestFlight). Empty = run number.'
+        required: false
+        default: ''
+
+jobs:
+  testflight:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      RC_KEY_IOS: ${{ secrets.RC_API_KEY_IOS }}
+      GSI_PLIST_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
+    steps:
+      - name: Check that the Apple secrets exist
+        id: check
+        run: |
+          missing=""
+          [ -n "$ASC_KEY_ID" ]    || missing="$missing APP_STORE_CONNECT_KEY_ID"
+          [ -n "$ASC_ISSUER_ID" ] || missing="$missing APP_STORE_CONNECT_ISSUER_ID"
+          [ -n "$ASC_KEY_P8" ]    || missing="$missing APP_STORE_CONNECT_KEY_P8"
+          [ -n "$TEAM_ID" ]       || missing="$missing APPLE_TEAM_ID"
+          [ -n "$RC_KEY_IOS" ]    || missing="$missing RC_API_KEY_IOS"
+          if [ -n "$missing" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "## TestFlight job skipped"
+              echo ""
+              echo "Nothing was built. These repository secrets are not set yet:"
+              for m in $missing; do echo "- \`$m\`"; done
+              echo ""
+              echo "See the comment at the top of .github/workflows/ios-testflight.yml for what each one is."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "Skipping: missing secrets:$missing"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.ready == 'true'
+
+      - uses: subosito/flutter-action@v2
+        if: steps.check.outputs.ready == 'true'
+        with:
+          flutter-version: 3.44.9
+          cache: true
+
+      - name: Install dependencies
+        if: steps.check.outputs.ready == 'true'
+        run: flutter pub get
+
+      - name: Optional files (Firebase plist, Google client id)
+        if: steps.check.outputs.ready == 'true'
+        env:
+          GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID }}
+        run: |
+          if [ -n "$GSI_PLIST_B64" ]; then
+            echo "$GSI_PLIST_B64" | base64 --decode > ios/Runner/GoogleService-Info.plist
+            echo "GoogleService-Info.plist written (not committed)."
+          else
+            echo "No GoogleService-Info.plist: push notifications stay off in this build."
+          fi
+          sh tool/write_google_xcconfig.sh "$GOOGLE_IOS_CLIENT_ID"
+
+      - name: Install the App Store Connect API key
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          printf '%s' "$ASC_KEY_P8" > "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+
+      - name: Build the app (release)
+        if: steps.check.outputs.ready == 'true'
+        env:
+          BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL || 'https://api.eventsrus.app' }}
+          WEB_BASE_URL: ${{ vars.WEB_BASE_URL || 'https://eventsrus.app' }}
+          GOOGLE_IOS_CLIENT_ID: ${{ vars.GOOGLE_IOS_CLIENT_ID }}
+          BUILD_NUMBER_INPUT: ${{ github.event.inputs.build_number }}
+        run: |
+          BUILD_NUMBER="${BUILD_NUMBER_INPUT:-$GITHUB_RUN_NUMBER}"
+          flutter build ios --release --no-codesign \
+            --build-number="$BUILD_NUMBER" \
+            --dart-define=BACKEND_BASE_URL="$BACKEND_BASE_URL" \
+            --dart-define=WEB_BASE_URL="$WEB_BASE_URL" \
+            --dart-define=RC_API_KEY_IOS="$RC_KEY_IOS" \
+            --dart-define=GOOGLE_IOS_CLIENT_ID="$GOOGLE_IOS_CLIENT_ID"
+
+      - name: Archive and sign
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          EOF
+          AUTH="-allowProvisioningUpdates -authenticationKeyPath $HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 -authenticationKeyID ${ASC_KEY_ID} -authenticationKeyIssuerID ${ASC_ISSUER_ID}"
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
+            -archivePath build/Runner.xcarchive archive DEVELOPMENT_TEAM="$TEAM_ID" $AUTH
+          xcodebuild -exportArchive -archivePath build/Runner.xcarchive \
+            -exportOptionsPlist ExportOptions.plist -exportPath build/ipa $AUTH
+
+      - name: Upload to TestFlight
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          xcrun altool --upload-app -f build/ipa/*.ipa -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+          {
+            echo "## Uploaded to TestFlight"
+            echo "Build number: ${BUILD_NUMBER_INPUT:-$GITHUB_RUN_NUMBER}"
+            echo "It appears in App Store Connect > TestFlight after Apple finishes processing (usually 5-30 minutes)."
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          BUILD_NUMBER_INPUT: ${{ github.event.inputs.build_number }}
+
+      - name: Remove the API key from the runner
+        if: always() && steps.check.outputs.ready == 'true'
+        run: rm -f "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8" ios/Runner/GoogleService-Info.plist

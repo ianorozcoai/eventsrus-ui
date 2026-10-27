@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Sign in with Apple (App Store guideline 4.8). The capability must also be ticked on the App ID. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<!-- Push notifications. "development" is switched to "production" automatically when the app is
+	     signed for the App Store / TestFlight. The Push Notifications capability must be ticked on the App ID. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

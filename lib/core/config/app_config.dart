@@ -67,6 +67,19 @@ class AppConfig {
   static const String androidPackageName = 'com.eventsrus.eventsrus_ui';
   static const String playSubscriptionId = 'supplier_pro';
 
+  // Public "iOS" OAuth client id for Google Sign-In on iPhone (Google Cloud Console, bundle id
+  // com.eventsrus.eventsrusui). Supplied at build time like the RevenueCat key:
+  // --dart-define=GOOGLE_IOS_CLIENT_ID=1234-abcd.apps.googleusercontent.com
+  // The same id also goes into ios/Flutter/Google.xcconfig (tool/write_google_xcconfig.sh) for the URL scheme.
+  static const String _googleIosClientId = String.fromEnvironment('GOOGLE_IOS_CLIENT_ID');
+
+  /// Null when this build has no iOS client id (always null on Android, which does not use one).
+  static String? get googleIosClientId {
+    if (defaultTargetPlatform != TargetPlatform.iOS) return null;
+    final id = _googleIosClientId.trim();
+    return id.isEmpty ? null : id;
+  }
+
   static const String googleWebClientId =
       '590594963033-29a013v91o79jnf72pkcdnvf6ue3egej.apps.googleusercontent.com';
 
