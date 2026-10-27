@@ -49,6 +49,15 @@ class SubscriptionApi {
     }
   }
 
+  /// Answering the one-time sign-up welcome (either button) - it is not shown again.
+  Future<void> markTrialWelcomeShown() async {
+    try {
+      await _apiClient.dio.post('/api/v1/vendors/me/subscription/trial-welcome-shown');
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
   /// "Upload Payment Screenshot" on the GCash popup - manual payment
   /// verification flow (no payment API). The resulting status reflects the
   /// GCash grant immediately (plan becomes non-null with

@@ -27,6 +27,9 @@ class SubscriptionStatusResponse {
   // but currently unused, see plan_selection_screen.dart's doc comment.
   final bool showWelcomePopup;
   final bool gcashAwaitingVerification;
+  // True once, right after sign-up, while the supplier is on the free trial: show the
+  // "Welcome to EventsRUs" message (Subscribe now / Continue with the free trial).
+  final bool showTrialWelcome;
   final bool gcashRejected;
   final String? gcashRejectionReason;
 
@@ -49,6 +52,7 @@ class SubscriptionStatusResponse {
     this.annualPlanId,
     this.showWelcomePopup = false,
     this.gcashAwaitingVerification = false,
+    this.showTrialWelcome = false,
     this.gcashRejected = false,
     this.gcashRejectionReason,
   });
@@ -77,6 +81,7 @@ class SubscriptionStatusResponse {
         annualPlanId: json['annualPlanId'] as String?,
         showWelcomePopup: json['showWelcomePopup'] as bool? ?? false,
         gcashAwaitingVerification: json['gcashAwaitingVerification'] as bool? ?? false,
+        showTrialWelcome: json['showTrialWelcome'] as bool? ?? false,
         gcashRejected: json['gcashRejected'] as bool? ?? false,
         gcashRejectionReason: json['gcashRejectionReason'] as String?,
       );

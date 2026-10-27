@@ -26,6 +26,12 @@ class TrialStatusCard extends StatelessWidget {
         status.expiresAt != null;
   }
 
+  /// Whole days left of the supplier's free period (the sign-up trial or a longer free plan), or null.
+  static int? freeDaysLeft(SubscriptionStatusResponse status) {
+    final trialDays = status.freeTrialDaysLeft;
+    return trialDays ?? _daysUntil(status.expiresAt);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -33,7 +39,7 @@ class TrialStatusCard extends StatelessWidget {
 
     final trialDays = status.freeTrialDaysLeft;
     final DateTime? endDate = trialDays != null ? status.graceEndsAt : status.expiresAt;
-    final int? daysLeft = trialDays ?? _daysUntil(endDate);
+    final int? daysLeft = freeDaysLeft(status);
     final urgent = daysLeft != null && daysLeft <= urgentDays;
 
     final title = trialDays != null
