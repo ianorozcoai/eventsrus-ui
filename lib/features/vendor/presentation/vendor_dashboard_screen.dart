@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../dashboard/presentation/widgets/trial_status_card.dart';
+import '../../subscription/data/models/subscription_status_response.dart';
+import '../../subscription/data/subscription_api.dart';
 import '../data/models/vendor_dashboard.dart';
 import '../data/vendor_dashboard_api.dart';
 
@@ -14,6 +17,7 @@ class VendorDashboardScreen extends StatefulWidget {
 
 class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
   VendorDashboard? _dashboard;
+  SubscriptionStatusResponse? _planStatus;
   bool _loading = true;
   String? _error;
 
@@ -35,6 +39,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
         _dashboard = dashboard;
         _loading = false;
       });
+      _loadPlanStatus();
     } catch (e) {
       // ApiException.message is already written to be shown to a user
       // (same pattern as login_screen.dart etc.) - anything else is an
@@ -47,6 +52,15 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// The plan status only feeds the free-trial card, so a failure here must never break the dashboard.
+  Future<void> _loadPlanStatus() async {
+    try {
+      final status = await context.read<SubscriptionApi>().getStatus();
+      if (!mounted) return;
+      setState(() => _planStatus = status);
+    } catch (_) {}
   }
 
   @override
@@ -108,6 +122,11 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
+            if (_planStatus != null && TrialStatusCard.appliesTo(_planStatus!))
+              TrialStatusCard(
+                status: _planStatus!,
+                onChoosePlan: () => Navigator.of(context).pushNamed('/subscription/plans'),
+              ),
             if (!dashboard.hasPackages)
               Container(
                 width: double.infinity,

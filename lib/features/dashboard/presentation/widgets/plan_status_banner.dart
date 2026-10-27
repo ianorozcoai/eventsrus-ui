@@ -17,9 +17,6 @@ import '../../../subscription/data/subscription_api.dart';
 /// flag, unlike web's WebSession.PAYWALL_SHOWN) - they reappear next time
 /// this widget remounts (e.g. next login), which is an acceptable mobile
 /// simplification of "keeps reappearing every login until resolved".
-/// The free-trial banner only appears in the trial's last two weeks (same as the website's popup).
-const int _trialReminderDays = 14;
-
 class PlanStatusBanner extends StatefulWidget {
   const PlanStatusBanner({super.key});
 
@@ -62,24 +59,19 @@ class _PlanStatusBannerState extends State<PlanStatusBanner> {
 
     final banners = <Widget>[];
 
-    // A new supplier's free trial is the grace period of a free grant: tell them it is a trial (and
-    // only nudge in its last week), never that their plan "expired".
-    final trialDaysLeft = status.freeTrialDaysLeft;
-    final showTrialReminder = trialDaysLeft != null && trialDaysLeft <= _trialReminderDays;
-    if (!_expiryDismissed &&
-        (status.expired || (status.inGracePeriod && (trialDaysLeft == null || showTrialReminder)) || status.expiringSoon)) {
+    // The sign-up free trial (the grace period of a free grant) is NOT announced here: the dashboard's
+    // TrialStatusCard owns that message, so a new supplier is never told "expired" and never nagged twice.
+    final onFreeTrial = status.onFreeTrial;
+    if (!_expiryDismissed && (status.expired || (status.inGracePeriod && !onFreeTrial) || status.expiringSoon)) {
       banners.add(
         _Banner(
           message: status.expired
               ? 'Your plan has expired. Upgrade to keep full access to supplier features.'
-              : trialDaysLeft != null
-                  ? 'Your free trial ends in $trialDaysLeft ${trialDaysLeft == 1 ? 'day' : 'days'}. '
-                      'Choose a plan to keep your supplier tools.'
-                  : status.inGracePeriod
-                      ? 'Your plan has expired but you still have full access until '
-                          '${_formatDate(status.graceEndsAt)}. Renew now to avoid losing access.'
-                      : 'Your plan is expiring soon. Upgrade now to avoid any interruption.',
-          actionLabel: trialDaysLeft != null ? 'Choose plan' : 'Upgrade',
+              : status.inGracePeriod
+                  ? 'Your plan has expired but you still have full access until '
+                      '${_formatDate(status.graceEndsAt)}. Renew now to avoid losing access.'
+                  : 'Your plan is expiring soon. Upgrade now to avoid any interruption.',
+          actionLabel: 'Upgrade',
           onAction: () => Navigator.of(context).pushNamed('/subscription/plans'),
           onDismiss: status.expired ? null : () => setState(() => _expiryDismissed = true),
         ),
