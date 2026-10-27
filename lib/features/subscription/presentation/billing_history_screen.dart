@@ -83,6 +83,21 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
   Future<void> _onStatusChanged(SubscriptionStatusResponse status) async {
     setState(() => _status = status);
     await context.read<AuthController>().applyPlanUpdate(plan: status.plan, planExpiresAt: status.expiresAt);
+    // A purchase (or any plan change) also creates billing-history rows. The list was loaded before it
+    // happened, so without this a supplier who has just paid sees "No billing history yet" until they
+    // pull to refresh.
+    await _reloadHistory();
+  }
+
+  /// Re-reads only the history list, quietly: no spinner, and the plan picker on screen is left alone.
+  Future<void> _reloadHistory() async {
+    try {
+      final entries = await context.read<SubscriptionApi>().getHistory();
+      if (!mounted) return;
+      setState(() => _entries = entries);
+    } catch (_) {
+      // Keep showing the list we have; pull-to-refresh is still there.
+    }
   }
 
   @override
