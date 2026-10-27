@@ -1,10 +1,10 @@
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/network/api_exception.dart';
+import '../../../../core/platform/store_billing_platform.dart';
 import '../../../auth/data/models/plan_tier.dart';
 import '../../../vendor/presentation/widgets/image_upload_tile.dart';
 import '../../data/models/billing_cycle.dart';
@@ -13,12 +13,12 @@ import '../../data/models/subscription_status_response.dart';
 import '../../data/subscription_api.dart';
 import 'play_billing_plan_picker.dart';
 
-/// Google Play's Payments policy requires in-app subscriptions bought on
-/// Android to use Google Play Billing, and forbids steering users to another
-/// payment method. So on Android this widget shows the Play Billing flow
-/// (PlayBillingPlanPicker) instead of PayPal/GCash, with no "pay on our
-/// website" wording (see docs/play-billing-design.md).
-bool externalPaymentsAllowedOnThisPlatform() => defaultTargetPlatform != TargetPlatform.android;
+/// Google Play's Payments policy (Android) and Apple's App Store guideline
+/// 3.1.1 (iOS) require in-app subscriptions to use the store's own billing and
+/// forbid steering users to another payment method. So on Android and iOS this
+/// widget shows the store flow (PlayBillingPlanPicker) instead of PayPal/GCash,
+/// with no "pay on our website" wording (see docs/play-billing-design.md).
+bool externalPaymentsAllowedOnThisPlatform() => !platformUsesStoreBilling();
 
 /// The billing-cycle picker + PayPal/GCash payment buttons - shared between
 /// PlanSelectionScreen (a brand-new vendor's forced first choice, or a
@@ -30,7 +30,7 @@ class SubscriptionPlanPicker extends StatefulWidget {
   final SubscriptionStatusResponse status;
   final void Function(SubscriptionStatusResponse) onStatusChanged;
 
-  /// Null means "decide from the platform" (false on Android, see
+  /// Null means "decide from the platform" (false on Android and iOS, see
   /// [externalPaymentsAllowedOnThisPlatform]); tests pass it explicitly.
   final bool? externalPaymentsAllowed;
 

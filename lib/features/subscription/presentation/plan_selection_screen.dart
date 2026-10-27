@@ -202,8 +202,8 @@ class _PlanSelectionScreenState extends State<PlanSelectionScreen> {
                         const SizedBox(height: 8),
                         Text(
                           !externalPaymentsAllowedOnThisPlatform()
-                              // Android: Google Play Billing only, no pointer to other payment
-                              // methods (Google Play Payments policy).
+                              // Android/iOS: store billing only, no pointer to other payment
+                              // methods (Google Play Payments policy, App Store 3.1.1).
                               ? 'Choose a plan to unlock your supplier tools.'
                               : widget.forced
                               ? 'Pick a billing cycle and pay via PayPal or GCash to get full access.'

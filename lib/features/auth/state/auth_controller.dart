@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/notifications/push_notification_service.dart';
+import '../../../core/platform/store_billing_platform.dart';
 import '../../../core/storage/secure_token_storage.dart';
 import '../../notifications/data/device_token_api.dart';
 import '../../subscription/data/play_billing_gateway.dart';
@@ -168,7 +169,7 @@ class AuthController extends ChangeNotifier {
     await _storage.clear();
     await GoogleAuthGateway.instance.signOut();
     // Detach RevenueCat from this account so the next person on the phone starts clean.
-    if (defaultTargetPlatform == TargetPlatform.android) {
+    if (platformUsesStoreBilling()) {
       await RevenueCatPlayBillingGateway.instance.logOut();
     }
     token = null;

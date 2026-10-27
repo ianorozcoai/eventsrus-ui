@@ -94,8 +94,21 @@ void main() {
     }
   });
 
-  testWidgets('other platforms keep external payments', (tester) async {
+  testWidgets('iOS also has no external payments (App Store guideline 3.1.1)', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      expect(externalPaymentsAllowedOnThisPlatform(), isFalse);
+      await _pump(tester);
+      expect(find.byKey(const Key('play-not-available')), findsOneWidget);
+      expect(find.text('Continue with PayPal'), findsNothing);
+      expect(find.text('Pay with GCash'), findsNothing);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('other platforms (desktop) keep external payments', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
     try {
       expect(externalPaymentsAllowedOnThisPlatform(), isTrue);
     } finally {

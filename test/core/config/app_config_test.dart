@@ -1,4 +1,5 @@
 import 'package:eventsrus_ui/core/config/app_config.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -23,6 +24,26 @@ void main() {
 
     test('a public Android key is used as is', () {
       expect(AppConfig.usableRevenueCatKey('goog_abc', allowTestStore: false), 'goog_abc');
+    });
+
+    String? keyFor(TargetPlatform p, {String android = '', String ios = '', bool allowTest = false}) =>
+        AppConfig.revenueCatKeyFor(p, androidKey: android, iosKey: ios, allowTestStore: allowTest);
+
+    test('Android uses RC_API_KEY exactly as before and ignores the iOS key', () {
+      expect(keyFor(TargetPlatform.android, android: 'goog_abc', ios: 'appl_xyz'), 'goog_abc');
+      expect(keyFor(TargetPlatform.android, ios: 'appl_xyz'), isNull);
+    });
+
+    test('iOS uses RC_API_KEY_IOS and only accepts an appl_ key', () {
+      expect(keyFor(TargetPlatform.iOS, android: 'goog_abc', ios: 'appl_xyz'), 'appl_xyz');
+      expect(keyFor(TargetPlatform.iOS, android: 'goog_abc'), isNull);
+      // An Android key put in the iOS slot by mistake is rejected.
+      expect(keyFor(TargetPlatform.iOS, ios: 'goog_abc'), isNull);
+    });
+
+    test('iOS test_ key needs ALLOW_TEST_STORE too', () {
+      expect(keyFor(TargetPlatform.iOS, ios: 'test_abc'), isNull);
+      expect(keyFor(TargetPlatform.iOS, ios: 'test_abc', allowTest: true), 'test_abc');
     });
 
     test('no key is supplied in the test build', () {

@@ -1,5 +1,7 @@
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
+
 class AppConfig {
   AppConfig._();
 
@@ -17,18 +19,41 @@ class AppConfig {
     return 'http://localhost:8080';
   }
 
-  // RevenueCat PUBLIC Android SDK key (starts with goog_), supplied at build time:
+  // RevenueCat PUBLIC SDK key, supplied at build time. Android (goog_...):
   // flutter build appbundle --dart-define=RC_API_KEY=goog_xxx
+  // iOS (appl_...): flutter build ipa --dart-define=RC_API_KEY_IOS=appl_xxx
   // Never hard-code it and never commit it. A test_ key (RevenueCat Test Store)
   // is ignored unless the build also sets --dart-define=ALLOW_TEST_STORE=true,
   // so a release build can never ship with the fake store by accident.
   static const String _revenueCatApiKey = String.fromEnvironment('RC_API_KEY');
+  static const String _revenueCatApiKeyIos = String.fromEnvironment('RC_API_KEY_IOS');
   static const bool _allowTestStore = bool.fromEnvironment('ALLOW_TEST_STORE');
 
   /// The key to configure purchases_flutter with, or null when none is usable
   /// (the plan screen then shows its safe "not available yet" state).
-  static String? get revenueCatApiKey =>
-      usableRevenueCatKey(_revenueCatApiKey, allowTestStore: _allowTestStore);
+  static String? get revenueCatApiKey => revenueCatKeyFor(
+        defaultTargetPlatform,
+        androidKey: _revenueCatApiKey,
+        iosKey: _revenueCatApiKeyIos,
+        allowTestStore: _allowTestStore,
+      );
+
+  /// Picks the key for [platform]. On iOS only an Apple key (appl_...) or an
+  /// allowed test_ key counts, so an Android key can never be used there by
+  /// mistake. Android behaviour is exactly [usableRevenueCatKey].
+  static String? revenueCatKeyFor(
+    TargetPlatform platform, {
+    required String androidKey,
+    required String iosKey,
+    required bool allowTestStore,
+  }) {
+    if (platform != TargetPlatform.iOS) {
+      return usableRevenueCatKey(androidKey, allowTestStore: allowTestStore);
+    }
+    final key = usableRevenueCatKey(iosKey, allowTestStore: allowTestStore);
+    if (key == null) return null;
+    return key.startsWith('appl_') || key.startsWith('test_') ? key : null;
+  }
 
   static String? usableRevenueCatKey(String key, {required bool allowTestStore}) {
     final trimmed = key.trim();

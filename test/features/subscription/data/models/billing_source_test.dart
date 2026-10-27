@@ -13,6 +13,8 @@ void main() {
     expect(BillingSource.paypal.toApi(), 'PAYPAL');
     expect(BillingSource.gcash.toApi(), 'GCASH');
     expect(BillingSource.googlePlay.toApi(), 'GOOGLE_PLAY');
+    expect(BillingSource.appStore.toApi(), 'APP_STORE');
+    expect(BillingSource.appStore.label, 'App Store');
   });
 
   test('fromApiNullable passes through null and parses otherwise', () {

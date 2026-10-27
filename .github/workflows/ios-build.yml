@@ -1,0 +1,59 @@
+name: iOS build (unsigned)
+
+# Proves the iPhone app compiles on a cloud Mac. Nothing is signed or uploaded:
+# signing and TestFlight come later, once the Apple Developer account and an App
+# Store Connect API key exist (those secrets are entered by the owner in GitHub
+# Settings, never written to files).
+
+on:
+  push:
+    branches: [feature/ios-port]
+  pull_request:
+    paths:
+      - 'ios/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.9
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile', 'pubspec.lock') }}
+
+      # No RC_API_KEY_IOS here: without a key the plan screen shows its safe
+      # "not available" state, which is fine for a compile check.
+      - name: Build iOS (no code signing)
+        run: flutter build ios --release --no-codesign
+
+      - name: Report
+        if: always()
+        run: |
+          {
+            echo "## iOS unsigned build"
+            echo ""
+            echo "Result: **${{ job.status }}**"
+            echo "Flutter: $(flutter --version | head -1)"
+            echo "Xcode: $(xcodebuild -version | head -1)"
+            if [ -d build/ios/iphoneos/Runner.app ]; then
+              echo "App size: $(du -sh build/ios/iphoneos/Runner.app | cut -f1)"
+              echo "Bundle id: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' build/ios/iphoneos/Runner.app/Info.plist)"
+              echo "Display name: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' build/ios/iphoneos/Runner.app/Info.plist)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
