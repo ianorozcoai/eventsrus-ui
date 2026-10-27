@@ -29,7 +29,16 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
             if (value == 'appearance') showThemeModePicker(context);
           },
           itemBuilder: (_) => const [
-            PopupMenuItem(value: 'appearance', child: Text('Appearance')),
+            PopupMenuItem(
+              value: 'appearance',
+              child: Row(
+                children: [
+                  Icon(Icons.brightness_6_outlined, size: 22),
+                  SizedBox(width: 14),
+                  Text('Appearance'),
+                ],
+              ),
+            ),
           ],
         ),
         Padding(

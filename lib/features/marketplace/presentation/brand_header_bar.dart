@@ -52,10 +52,24 @@ class BrandHeaderBar extends StatelessWidget implements PreferredSizeWidget {
               );
             }
           },
-          itemBuilder: (_) => const [
-            PopupMenuItem(value: 'appearance', child: Text('Appearance')),
-            PopupMenuItem(value: 'blocked-users', child: Text('Blocked users')),
-            PopupMenuItem(value: 'delete-account', child: Text('Delete account')),
+          itemBuilder: (menuContext) => [
+            const PopupMenuItem(
+              value: 'appearance',
+              child: _MenuRow(icon: Icons.brightness_6_outlined, label: 'Appearance'),
+            ),
+            const PopupMenuItem(
+              value: 'blocked-users',
+              child: _MenuRow(icon: Icons.block, label: 'Blocked users'),
+            ),
+            // Destructive, so it is tinted like an error and stays last.
+            PopupMenuItem(
+              value: 'delete-account',
+              child: _MenuRow(
+                icon: Icons.delete_outline,
+                label: 'Delete account',
+                color: Theme.of(menuContext).colorScheme.error,
+              ),
+            ),
           ],
         ),
       ],
@@ -77,5 +91,25 @@ class BrandHeaderBar extends StatelessWidget implements PreferredSizeWidget {
     if (confirmed == true) {
       await auth.logout();
     }
+  }
+}
+
+/// One row of the three-dot menu: an icon, then the label.
+class _MenuRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color? color;
+
+  const _MenuRow({required this.icon, required this.label, this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 22, color: color),
+        const SizedBox(width: 14),
+        Text(label, style: color == null ? null : TextStyle(color: color)),
+      ],
+    );
   }
 }

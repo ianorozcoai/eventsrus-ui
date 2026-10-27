@@ -37,6 +37,10 @@ void main() {
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('Blocked users'), findsOneWidget);
     expect(find.text('Delete account'), findsOneWidget);
+    // Every item carries an icon.
+    expect(find.byIcon(Icons.brightness_6_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.block), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
     // Appearance comes first.
     expect(tester.getTopLeft(find.text('Appearance')).dy, lessThan(tester.getTopLeft(find.text('Blocked users')).dy));
   });
