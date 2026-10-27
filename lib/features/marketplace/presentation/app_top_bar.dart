@@ -22,10 +22,15 @@ class AppTopBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       title: Text(title),
       actions: [
-        IconButton(
-          onPressed: () => showThemeModePicker(context),
-          icon: const Icon(Icons.brightness_6_outlined),
-          tooltip: 'Appearance',
+        // Appearance lives in the three-dot menu, same as the phone header (BrandHeaderBar).
+        PopupMenuButton<String>(
+          tooltip: 'More',
+          onSelected: (value) {
+            if (value == 'appearance') showThemeModePicker(context);
+          },
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: 'appearance', child: Text('Appearance')),
+          ],
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),

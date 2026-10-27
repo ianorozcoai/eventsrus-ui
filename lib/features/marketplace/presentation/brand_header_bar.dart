@@ -30,22 +30,19 @@ class BrandHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       title: SvgPicture.asset('assets/images/logo-navbar.svg', height: 26),
       actions: [
         IconButton(
-          onPressed: () => showThemeModePicker(context),
-          icon: const Icon(Icons.brightness_6_outlined),
-          tooltip: 'Appearance',
-        ),
-        IconButton(
           onPressed: () => _confirmLogout(context, auth),
           icon: const Icon(Icons.logout),
           tooltip: 'Log out',
         ),
-        // Google Play requires an in-app way to delete an account; this
-        // header is shared by the planner and vendor shells, so one entry
-        // here covers both roles.
+        // The three-dot menu holds the occasional things (Appearance, Blocked users, Delete account) so the
+        // bar itself stays clean. Google Play requires an in-app way to delete an account; this header is
+        // shared by the planner and vendor shells, so one entry here covers both roles.
         PopupMenuButton<String>(
           tooltip: 'More',
           onSelected: (value) {
-            if (value == 'blocked-users') {
+            if (value == 'appearance') {
+              showThemeModePicker(context);
+            } else if (value == 'blocked-users') {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const BlockedUsersScreen()),
               );
@@ -56,6 +53,7 @@ class BrandHeaderBar extends StatelessWidget implements PreferredSizeWidget {
             }
           },
           itemBuilder: (_) => const [
+            PopupMenuItem(value: 'appearance', child: Text('Appearance')),
             PopupMenuItem(value: 'blocked-users', child: Text('Blocked users')),
             PopupMenuItem(value: 'delete-account', child: Text('Delete account')),
           ],
