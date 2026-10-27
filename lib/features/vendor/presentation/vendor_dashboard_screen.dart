@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../dashboard/presentation/widgets/trial_status_card.dart';
-import '../../dashboard/presentation/widgets/trial_welcome_dialog.dart';
+import '../../dashboard/presentation/trial_welcome_screen.dart';
 import '../../subscription/data/models/subscription_status_response.dart';
 import '../../subscription/data/subscription_api.dart';
 import '../data/models/vendor_dashboard.dart';
@@ -72,7 +72,7 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
   /// The one-time "Welcome to EventsRUs" message right after sign-up. Either answer ends it for good.
   Future<void> _showTrialWelcome(SubscriptionStatusResponse status) async {
     final api = context.read<SubscriptionApi>();
-    final choice = await showTrialWelcomeDialog(context, daysLeft: TrialStatusCard.freeDaysLeft(status));
+    final choice = await showTrialWelcomeScreen(context, daysLeft: TrialStatusCard.freeDaysLeft(status));
     try {
       await api.markTrialWelcomeShown();
     } catch (_) {
