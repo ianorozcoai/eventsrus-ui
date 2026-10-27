@@ -8,6 +8,7 @@ import '../features/auth/presentation/role_picker_screen.dart';
 import '../features/auth/state/auth_controller.dart';
 import '../features/planner/presentation/planner_shell.dart';
 import '../features/subscription/presentation/plan_selection_screen.dart';
+import '../features/terms/presentation/terms_gate.dart';
 import '../features/vendor/presentation/vendor_onboarding_screen.dart';
 import '../features/vendor/presentation/vendor_shell.dart';
 
@@ -68,6 +69,11 @@ class _AuthGateState extends State<AuthGate> {
       return const SplashScreen();
     }
 
+    // Everyone who gets this far (planner or supplier) accepts the current Terms once before using the app.
+    return TermsGate(child: _signedInHome(auth));
+  }
+
+  Widget _signedInHome(AuthController auth) {
     if (auth.role == Role.vendor) {
       // A vendor who has never subscribed at all (no row exists on the
       // backend yet - auth.plan is null, set from the same login/session
