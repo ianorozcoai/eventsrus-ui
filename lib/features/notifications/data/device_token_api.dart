@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
+
 import '../../../core/network/api_client.dart';
 import '../../../core/network/dio_error_mapper.dart';
 
@@ -18,9 +20,13 @@ class DeviceTokenApi {
 
   DeviceTokenApi(this._apiClient);
 
+  /// "IOS" or "ANDROID": the backend stores it as free text and never branches on it.
+  static String platformName([TargetPlatform? platform]) =>
+      (platform ?? defaultTargetPlatform) == TargetPlatform.iOS ? 'IOS' : 'ANDROID';
+
   Future<void> register(String token) async {
     try {
-      await _apiClient.dio.post('/api/v1/users/me/device-tokens', data: {'token': token, 'platform': 'ANDROID'});
+      await _apiClient.dio.post('/api/v1/users/me/device-tokens', data: {'token': token, 'platform': platformName()});
     } on DioException catch (e) {
       throw mapDioError(e);
     }

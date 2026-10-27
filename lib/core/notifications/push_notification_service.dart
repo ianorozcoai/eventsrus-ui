@@ -28,6 +28,10 @@ const _defaultChannel = AndroidNotificationChannel(
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {}
 
+/// iOS additionally needs GoogleService-Info.plist in ios/Runner (same Firebase
+/// project) and an APNs key uploaded to Firebase; without them the same
+/// "not configured, skip" path below applies.
+///
 /// Push notifications (Firebase Cloud Messaging) - lets a vendor see new
 /// leads/messages/quotations/booking updates arrive even with the app
 /// closed, the same way BPI/Grab do. Requires a real Firebase project with
@@ -64,8 +68,14 @@ class PushNotificationService {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     await _localNotifications.initialize(
+      // iOS: permission is asked once, by FirebaseMessaging.requestPermission below.
       const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
       ),
       onDidReceiveNotificationResponse: _onLocalNotificationTap,
     );
@@ -176,6 +186,7 @@ class PushNotificationService {
       notification.body,
       NotificationDetails(
         android: AndroidNotificationDetails(_defaultChannel.id, _defaultChannel.name),
+        iOS: const DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true),
       ),
       payload: message.data.isEmpty ? null : jsonEncode(message.data),
     );
