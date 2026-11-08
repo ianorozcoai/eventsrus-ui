@@ -49,9 +49,14 @@ class _VendorPackagesScreenState extends State<VendorPackagesScreen> {
   }
 
   Future<void> _openPackageForm({VendorPackage? existing}) async {
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (_) => _PackageFormDialog(existing: existing, allGroups: _groups ?? const []),
+    // A full page (like the other modules' add/edit screens), not a pop-up.
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _PackageFormPage(
+          existing: existing,
+          allGroups: _groups ?? const [],
+        ),
+      ),
     );
     if (saved == true) await _load();
   }
@@ -65,12 +70,19 @@ class _VendorPackagesScreenState extends State<VendorPackagesScreen> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Group name', hintText: 'e.g., Weddings'),
+          decoration: const InputDecoration(
+            labelText: 'Group name',
+            hintText: 'e.g., Weddings',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(controller.text.trim()),
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(controller.text.trim()),
             child: const Text('Add'),
           ),
         ],
@@ -84,7 +96,9 @@ class _VendorPackagesScreenState extends State<VendorPackagesScreen> {
       await _load();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 
@@ -101,7 +115,9 @@ class _VendorPackagesScreenState extends State<VendorPackagesScreen> {
       await _load();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 
@@ -116,11 +132,16 @@ class _VendorPackagesScreenState extends State<VendorPackagesScreen> {
     if (!mounted) return;
 
     try {
-      await context.read<VendorPackageApi>().setActive(package.id, !package.active);
+      await context.read<VendorPackageApi>().setActive(
+        package.id,
+        !package.active,
+      );
       await _load();
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 
@@ -144,14 +165,24 @@ class _VendorPackagesScreenState extends State<VendorPackagesScreen> {
           children: [
             Text(
               'Manage Listings',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _GroupsCard(groups: groups, onAdd: _createGroup, onDelete: _deleteGroup),
+            _GroupsCard(
+              groups: groups,
+              onAdd: _createGroup,
+              onDelete: _deleteGroup,
+            ),
             const SizedBox(height: 16),
             Expanded(
               child: packages.isEmpty
-                  ? const Center(child: Text('No packages yet — add one so planners know what you offer.'))
+                  ? const Center(
+                      child: Text(
+                        'No packages yet — add one so planners know what you offer.',
+                      ),
+                    )
                   : ListView.separated(
                       itemCount: packages.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 8),
@@ -178,8 +209,14 @@ Future<bool?> _confirmDialog(BuildContext context, String message) {
     builder: (dialogContext) => AlertDialog(
       content: Text(message),
       actions: [
-        TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Cancel')),
-        FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Confirm')),
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('Confirm'),
+        ),
       ],
     ),
   );
@@ -195,7 +232,11 @@ class _GroupsCard extends StatelessWidget {
   final VoidCallback onAdd;
   final ValueChanged<VendorPackageGroup> onDelete;
 
-  const _GroupsCard({required this.groups, required this.onAdd, required this.onDelete});
+  const _GroupsCard({
+    required this.groups,
+    required this.onAdd,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -210,19 +251,30 @@ class _GroupsCard extends StatelessWidget {
               children: [
                 Text(
                   'Groups',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
-                TextButton.icon(onPressed: onAdd, icon: const Icon(Icons.add), label: const Text('Add Group')),
+                TextButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Group'),
+                ),
               ],
             ),
             Text(
               'Planners can filter your storefront packages by group.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colorScheme.outline),
             ),
             const SizedBox(height: 8),
             if (groups.isEmpty)
-              Text('No groups yet - add one above.', style: Theme.of(context).textTheme.bodySmall)
+              Text(
+                'No groups yet - add one above.',
+                style: Theme.of(context).textTheme.bodySmall,
+              )
             else
               Wrap(
                 spacing: 8,
@@ -258,7 +310,9 @@ class _PackageCard extends StatelessWidget {
   String get _priceLabel {
     switch (package.pricingType) {
       case PackagePricingType.fixed:
-        return package.price != null ? '₱${package.price!.toStringAsFixed(0)}' : 'No price set';
+        return package.price != null
+            ? '₱${package.price!.toStringAsFixed(0)}'
+            : 'No price set';
       case PackagePricingType.range:
         if (package.minPrice != null && package.maxPrice != null) {
           return '₱${package.minPrice!.toStringAsFixed(0)} - ₱${package.maxPrice!.toStringAsFixed(0)}';
@@ -296,21 +350,42 @@ class _PackageCard extends StatelessWidget {
                     ),
                   ],
                   const Spacer(),
-                  IconButton(icon: const Icon(Icons.edit_outlined), tooltip: 'Edit package', onPressed: onEdit),
                   IconButton(
-                    icon: Icon(package.active ? Icons.pause_circle_outline : Icons.restart_alt),
-                    tooltip: package.active ? 'Discontinue package' : 'Reactivate package',
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: 'Edit package',
+                    onPressed: onEdit,
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      package.active
+                          ? Icons.pause_circle_outline
+                          : Icons.restart_alt,
+                    ),
+                    tooltip: package.active
+                        ? 'Discontinue package'
+                        : 'Reactivate package',
                     onPressed: onToggleActive,
                   ),
                 ],
               ),
-              Text(package.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-              if (package.description != null && package.description!.isNotEmpty) ...[
+              Text(
+                package.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (package.description != null &&
+                  package.description!.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(package.description!, style: theme.textTheme.bodySmall),
               ],
               const SizedBox(height: 8),
-              Text(_priceLabel, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                _priceLabel,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               if (package.groups.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Wrap(
@@ -321,7 +396,8 @@ class _PackageCard extends StatelessWidget {
                         (name) => Chip(
                           label: Text(name),
                           visualDensity: VisualDensity.compact,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                         ),
                       )
                       .toList(),
@@ -331,9 +407,16 @@ class _PackageCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.photo_library_outlined, size: 16, color: theme.colorScheme.outline),
+                    Icon(
+                      Icons.photo_library_outlined,
+                      size: 16,
+                      color: theme.colorScheme.outline,
+                    ),
                     const SizedBox(width: 4),
-                    Text('${package.images.length} photo(s)', style: theme.textTheme.bodySmall),
+                    Text(
+                      '${package.images.length} photo(s)',
+                      style: theme.textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ],
@@ -345,10 +428,10 @@ class _PackageCard extends StatelessWidget {
   }
 }
 
-/// Add/Edit Package - one dialog for both, matching eventsrus-web's single
+/// Add/Edit Package - one full page for both, matching eventsrus-web's single
 /// per-package form (see packages.html). Groups are assigned here as
 /// checkboxes/chips rather than web's separate "Edit Groups" modal, since a
-/// mobile dialog can comfortably hold both without the extra round trip.
+/// full page can comfortably hold both without the extra round trip.
 ///
 /// Photos behave differently depending on mode, same reasoning as web's
 /// dropzone-queued-until-save vs. already-saved-is-immediate split:
@@ -358,17 +441,17 @@ class _PackageCard extends StatelessWidget {
 /// - Creating a new package: there's no id yet, so picked photos are held
 ///   locally (_pendingImages) and only actually uploaded after the package
 ///   itself is created successfully.
-class _PackageFormDialog extends StatefulWidget {
+class _PackageFormPage extends StatefulWidget {
   final VendorPackage? existing;
   final List<VendorPackageGroup> allGroups;
 
-  const _PackageFormDialog({required this.existing, required this.allGroups});
+  const _PackageFormPage({required this.existing, required this.allGroups});
 
   @override
-  State<_PackageFormDialog> createState() => _PackageFormDialogState();
+  State<_PackageFormPage> createState() => _PackageFormPageState();
 }
 
-class _PackageFormDialogState extends State<_PackageFormDialog> {
+class _PackageFormPageState extends State<_PackageFormPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
@@ -392,10 +475,18 @@ class _PackageFormDialogState extends State<_PackageFormDialog> {
     super.initState();
     final existing = widget.existing;
     _nameController = TextEditingController(text: existing?.name ?? '');
-    _descriptionController = TextEditingController(text: existing?.description ?? '');
-    _priceController = TextEditingController(text: existing?.price?.toStringAsFixed(2) ?? '');
-    _minPriceController = TextEditingController(text: existing?.minPrice?.toStringAsFixed(2) ?? '');
-    _maxPriceController = TextEditingController(text: existing?.maxPrice?.toStringAsFixed(2) ?? '');
+    _descriptionController = TextEditingController(
+      text: existing?.description ?? '',
+    );
+    _priceController = TextEditingController(
+      text: existing?.price?.toStringAsFixed(2) ?? '',
+    );
+    _minPriceController = TextEditingController(
+      text: existing?.minPrice?.toStringAsFixed(2) ?? '',
+    );
+    _maxPriceController = TextEditingController(
+      text: existing?.maxPrice?.toStringAsFixed(2) ?? '',
+    );
     _packageType = existing?.packageType ?? PackageType.service;
     _pricingType = existing?.pricingType ?? PackagePricingType.fixed;
     _existingImages = List.of(existing?.images ?? const []);
@@ -403,7 +494,10 @@ class _PackageFormDialogState extends State<_PackageFormDialog> {
     // names (see VendorPackage.groups' own doc comment), same convention
     // web's editGroupsCheckbox pre-check uses.
     final currentNames = existing?.groups.toSet() ?? <String>{};
-    _selectedGroupIds = widget.allGroups.where((g) => currentNames.contains(g.name)).map((g) => g.id).toSet();
+    _selectedGroupIds = widget.allGroups
+        .where((g) => currentNames.contains(g.name))
+        .map((g) => g.id)
+        .toSet();
   }
 
   @override
@@ -417,7 +511,11 @@ class _PackageFormDialogState extends State<_PackageFormDialog> {
   }
 
   Future<void> _pickPhotos() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image, withData: true, allowMultiple: true);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+      allowMultiple: true,
+    );
     if (result == null || result.files.isEmpty) return;
 
     if (!_isEditing) {
@@ -445,12 +543,18 @@ class _PackageFormDialogState extends State<_PackageFormDialog> {
   }
 
   Future<void> _deleteExistingPhoto(VendorPackageImage image) async {
-    final confirmed = await _confirmDialog(context, 'Remove this photo permanently? This cannot be undone.');
+    final confirmed = await _confirmDialog(
+      context,
+      'Remove this photo permanently? This cannot be undone.',
+    );
     if (confirmed != true) return;
     if (!mounted) return;
 
     try {
-      await context.read<VendorPackageImageApi>().delete(widget.existing!.id, image.id);
+      await context.read<VendorPackageImageApi>().delete(
+        widget.existing!.id,
+        image.id,
+      );
       if (!mounted) return;
       setState(() => _existingImages.removeWhere((img) => img.id == image.id));
     } on ApiException catch (e) {
@@ -467,10 +571,18 @@ class _PackageFormDialogState extends State<_PackageFormDialog> {
     });
 
     final name = _nameController.text.trim();
-    final description = _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim();
-    final price = _pricingType == PackagePricingType.fixed ? double.tryParse(_priceController.text.trim()) : null;
-    final minPrice = _pricingType == PackagePricingType.range ? double.tryParse(_minPriceController.text.trim()) : null;
-    final maxPrice = _pricingType == PackagePricingType.range ? double.tryParse(_maxPriceController.text.trim()) : null;
+    final description = _descriptionController.text.trim().isEmpty
+        ? null
+        : _descriptionController.text.trim();
+    final price = _pricingType == PackagePricingType.fixed
+        ? double.tryParse(_priceController.text.trim())
+        : null;
+    final minPrice = _pricingType == PackagePricingType.range
+        ? double.tryParse(_minPriceController.text.trim())
+        : null;
+    final maxPrice = _pricingType == PackagePricingType.range
+        ? double.tryParse(_maxPriceController.text.trim())
+        : null;
 
     final packageApi = context.read<VendorPackageApi>();
     final imageApi = context.read<VendorPackageImageApi>();
@@ -527,180 +639,243 @@ class _PackageFormDialogState extends State<_PackageFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEditing ? 'Edit Package' : 'Add Package'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Package Name'),
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description (Optional)'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Package Type', style: Theme.of(context).textTheme.labelLarge),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: PackageType.values
-                    .map(
-                      (type) => ChoiceChip(
-                        label: Text(type.label),
-                        selected: _packageType == type,
-                        onSelected: (_) => setState(() => _packageType = type),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Pricing', style: Theme.of(context).textTheme.labelLarge),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: PackagePricingType.values
-                    .map(
-                      (type) => ChoiceChip(
-                        label: Text(type.label),
-                        selected: _pricingType == type,
-                        onSelected: (_) => setState(() => _pricingType = type),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 8),
-              if (_pricingType == PackagePricingType.fixed)
+    return Scaffold(
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Package' : 'Add Package')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 TextFormField(
-                  controller: _priceController,
-                  decoration: const InputDecoration(labelText: 'Price', prefixText: '₱ '),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Package Name'),
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? 'Required'
+                      : null,
                 ),
-              if (_pricingType == PackagePricingType.range)
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _minPriceController,
-                        decoration: const InputDecoration(labelText: 'Min Price', prefixText: '₱ '),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _maxPriceController,
-                        decoration: const InputDecoration(labelText: 'Max Price', prefixText: '₱ '),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      ),
-                    ),
-                  ],
-                ),
-              if (_pricingType == PackagePricingType.quote)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    'Planners will see "Request for Quotation" instead of a price - they\'ll need to '
-                    'message you directly to ask.',
-                    style: Theme.of(context).textTheme.bodySmall,
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description (Optional)',
                   ),
-                ),
-              const SizedBox(height: 16),
-              if (widget.allGroups.isNotEmpty) ...[
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Groups', style: Theme.of(context).textTheme.labelLarge),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.allGroups.map((group) {
-                    final selected = _selectedGroupIds.contains(group.id);
-                    return FilterChip(
-                      label: Text(group.name),
-                      selected: selected,
-                      onSelected: (value) => setState(() {
-                        if (value) {
-                          _selectedGroupIds.add(group.id);
-                        } else {
-                          _selectedGroupIds.remove(group.id);
-                        }
-                      }),
-                    );
-                  }).toList(),
+                  maxLines: 3,
                 ),
                 const SizedBox(height: 16),
-              ],
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Photos', style: Theme.of(context).textTheme.labelLarge),
-              ),
-              const SizedBox(height: 8),
-              PackagePhotoGrid(images: _existingImages, onDelete: _deleteExistingPhoto),
-              if (_pendingImages.isNotEmpty) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Package Type',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _pendingImages
+                  children: PackageType.values
                       .map(
-                        (file) => PendingPackagePhotoThumb(
-                          file: file,
-                          onRemove: () => setState(() => _pendingImages.remove(file)),
+                        (type) => ChoiceChip(
+                          label: Text(type.label),
+                          selected: _packageType == type,
+                          onSelected: (_) =>
+                              setState(() => _packageType = type),
                         ),
                       )
                       .toList(),
                 ),
-              ],
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _uploadingPhoto ? null : _pickPhotos,
-                icon: _uploadingPhoto
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Pricing',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: PackagePricingType.values
+                      .map(
+                        (type) => ChoiceChip(
+                          label: Text(type.label),
+                          selected: _pricingType == type,
+                          onSelected: (_) =>
+                              setState(() => _pricingType = type),
+                        ),
                       )
-                    : const Icon(Icons.add_photo_alternate_outlined),
-                label: Text(_uploadingPhoto ? 'Uploading…' : 'Add Photos'),
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                      .toList(),
+                ),
+                const SizedBox(height: 8),
+                if (_pricingType == PackagePricingType.fixed)
+                  TextFormField(
+                    controller: _priceController,
+                    decoration: const InputDecoration(
+                      labelText: 'Price',
+                      prefixText: '₱ ',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                  ),
+                if (_pricingType == PackagePricingType.range)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _minPriceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Min Price',
+                            prefixText: '₱ ',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _maxPriceController,
+                          decoration: const InputDecoration(
+                            labelText: 'Max Price',
+                            prefixText: '₱ ',
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                if (_pricingType == PackagePricingType.quote)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Planners will see "Request for Quotation" instead of a price - they\'ll need to '
+                      'message you directly to ask.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                if (widget.allGroups.isNotEmpty) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Groups',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: widget.allGroups.map((group) {
+                      final selected = _selectedGroupIds.contains(group.id);
+                      return FilterChip(
+                        label: Text(group.name),
+                        selected: selected,
+                        onSelected: (value) => setState(() {
+                          if (value) {
+                            _selectedGroupIds.add(group.id);
+                          } else {
+                            _selectedGroupIds.remove(group.id);
+                          }
+                        }),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Photos',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                PackagePhotoGrid(
+                  images: _existingImages,
+                  onDelete: _deleteExistingPhoto,
+                ),
+                if (_pendingImages.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _pendingImages
+                        .map(
+                          (file) => PendingPackagePhotoThumb(
+                            file: file,
+                            onRemove: () =>
+                                setState(() => _pendingImages.remove(file)),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _uploadingPhoto ? null : _pickPhotos,
+                  icon: _uploadingPhoto
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.add_photo_alternate_outlined),
+                  label: Text(_uploadingPhoto ? 'Uploading…' : 'Add Photos'),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _submitting
+                      ? null
+                      : () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  onPressed: _submitting ? null : _submit,
+                  child: _submitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save'),
+                ),
+              ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _submitting ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _submitting ? null : _submit,
-          child: _submitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Save'),
-        ),
-      ],
     );
   }
 }
