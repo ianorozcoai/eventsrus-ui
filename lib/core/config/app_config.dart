@@ -39,6 +39,11 @@ class AppConfig {
 
   // Package name Google Play knows the app by, and the subscription product id
   // created in Play Console - used for the "Manage subscription" deep link.
+  // Sent as X-Client-Platform so the backend can record which kind of app an
+  // account first signed up from (shown to admins and in the new-sign-up email).
+  static String get clientPlatform =>
+      Platform.isIOS ? 'ios' : (Platform.isAndroid ? 'android' : 'mobile');
+
   static const String androidPackageName = 'com.eventsrus.eventsrus_ui';
   static const String playSubscriptionId = 'supplier_pro';
 
