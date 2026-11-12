@@ -39,6 +39,10 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>EventsRUs uses the camera only when you choose to take a photo, for example for your profile, a package picture or identity verification.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>EventsRUs does not track your location. This is only needed if you choose to use your current location to find suppliers near you.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>EventsRUs needs access to your photos so you can attach pictures to your profile, packages and messages.</string>
 	<key>UIBackgroundModes</key>
