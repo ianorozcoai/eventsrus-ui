@@ -34,6 +34,8 @@ name: iOS TestFlight (signed, manual)
 #   WEB_BASE_URL           defaults to https://eventsrus.app
 
 on:
+  push:
+    tags: ['ios-build-*']
   workflow_dispatch:
     inputs:
       build_number:
