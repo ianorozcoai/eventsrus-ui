@@ -43,25 +43,39 @@ class TermsAcceptanceScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SvgPicture.asset(
-                            dark ? 'assets/images/logo-navbar.svg' : 'assets/images/logo-login.svg',
-                            height: 44,
-                            alignment: Alignment.centerLeft,
+                          Center(
+                            child: SvgPicture.asset(
+                              dark
+                                  ? 'assets/images/logo-navbar.svg'
+                                  : 'assets/images/logo-login.svg',
+                              height: 64,
+                            ),
                           ),
                           const SizedBox(height: 40),
                           Text(
                             'Please review our Terms',
-                            style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, height: 1.15),
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              height: 1.15,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             'To keep EventsRUs safe for planners and suppliers, please agree to our Terms & Agreement before you continue.',
-                            style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           const SizedBox(height: 24),
-                          const _Rule('Be respectful: no harassment, hate, scams, spam or unlawful content.'),
-                          const _Rule('You can report anything and block anyone from inside the app.'),
-                          const _Rule('We may remove content or suspend accounts that break the rules.'),
+                          const _Rule(
+                            'Be respectful: no harassment, hate, scams, spam or unlawful content.',
+                          ),
+                          const _Rule(
+                            'You can report anything and block anyone from inside the app.',
+                          ),
+                          const _Rule(
+                            'We may remove content or suspend accounts that break the rules.',
+                          ),
                           const SizedBox(height: 8),
                           Wrap(
                             spacing: 8,
@@ -80,7 +94,10 @@ class TermsAcceptanceScreen extends StatelessWidget {
                           ),
                           if (errorMessage != null) ...[
                             const SizedBox(height: 12),
-                            Text(errorMessage!, style: TextStyle(color: theme.colorScheme.error)),
+                            Text(
+                              errorMessage!,
+                              style: TextStyle(color: theme.colorScheme.error),
+                            ),
                           ],
                         ],
                       ),
@@ -95,14 +112,22 @@ class TermsAcceptanceScreen extends StatelessWidget {
                           key: const Key('terms-agree'),
                           onPressed: busy ? null : onAgree,
                           child: busy
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
                               : const Text('I agree and continue'),
                         ),
                         const SizedBox(height: 14),
                         OutlinedButton(
                           key: const Key('terms-decline'),
                           onPressed: busy ? null : onDecline,
-                          style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
                           child: const Text('Decline and log out'),
                         ),
                       ],
@@ -132,7 +157,9 @@ class _Rule extends StatelessWidget {
         children: [
           const Icon(Icons.check_circle, size: 22, color: Color(0xFF7C3AED)),
           const SizedBox(width: 12),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyLarge)),
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.bodyLarge),
+          ),
         ],
       ),
     );
