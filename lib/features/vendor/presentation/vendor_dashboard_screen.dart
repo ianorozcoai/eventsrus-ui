@@ -72,7 +72,11 @@ class _VendorDashboardScreenState extends State<VendorDashboardScreen> {
   /// The one-time "Welcome to EventsRUs" message right after sign-up. Either answer ends it for good.
   Future<void> _showTrialWelcome(SubscriptionStatusResponse status) async {
     final api = context.read<SubscriptionApi>();
-    final choice = await showTrialWelcomeScreen(context, daysLeft: TrialStatusCard.freeDaysLeft(status));
+    final choice = await showTrialWelcomeScreen(
+      context,
+      daysLeft: TrialStatusCard.freeDaysLeft(status),
+      bookingsGoal: status.freeUntilBookings ? status.bookingsGoal : null,
+    );
     try {
       await api.markTrialWelcomeShown();
     } catch (_) {

@@ -14,6 +14,22 @@ SubscriptionStatusResponse _graceStatus(BillingSource source, DateTime graceEnds
     );
 
 void main() {
+  test('the bookings goal fields are read from the backend, and older backends without them still parse', () {
+    final withGoal = SubscriptionStatusResponse.fromJson({
+      'plan': 'PRO',
+      'billingSource': 'FREE_GRANT',
+      'bookingsGoal': 3,
+      'bookingsGoalReached': false,
+    });
+    expect(withGoal.bookingsGoal, 3);
+    expect(withGoal.bookingsGoalReached, isFalse);
+    expect(withGoal.freeUntilBookings, isTrue);
+
+    final withoutGoal = SubscriptionStatusResponse.fromJson({'plan': 'PRO', 'billingSource': 'FREE_GRANT'});
+    expect(withoutGoal.bookingsGoal, isNull);
+    expect(withoutGoal.freeUntilBookings, isFalse);
+  });
+
   test('a free grant in its grace period is a free trial, with the days left rounded up', () {
     final status = _graceStatus(BillingSource.freeGrant, DateTime.now().add(const Duration(days: 29, hours: 3)));
 

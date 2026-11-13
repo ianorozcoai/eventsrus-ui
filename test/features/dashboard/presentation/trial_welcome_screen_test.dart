@@ -2,14 +2,15 @@ import 'package:eventsrus_ui/features/dashboard/presentation/trial_welcome_scree
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Future<TrialWelcomeChoice?> _open(WidgetTester tester, {required int? daysLeft, required Future<void> Function() act}) async {
+Future<TrialWelcomeChoice?> _open(WidgetTester tester,
+    {required int? daysLeft, int? bookingsGoal, required Future<void> Function() act}) async {
   TrialWelcomeChoice? result;
   await tester.pumpWidget(MaterialApp(
     home: Builder(
       builder: (context) => Scaffold(
         body: Center(
           child: ElevatedButton(
-            onPressed: () async => result = await showTrialWelcomeScreen(context, daysLeft: daysLeft),
+            onPressed: () async => result = await showTrialWelcomeScreen(context, daysLeft: daysLeft, bookingsGoal: bookingsGoal),
             child: const Text('open'),
           ),
         ),
@@ -24,6 +25,15 @@ Future<TrialWelcomeChoice?> _open(WidgetTester tester, {required int? daysLeft, 
 }
 
 void main() {
+  testWidgets('a supplier on the bookings rule sees no day count, only free until the first bookings', (tester) async {
+    await _open(tester, daysLeft: 365, bookingsGoal: 3, act: () async {});
+
+    expect(find.text('Free until your first 3 bookings'), findsOneWidget);
+    expect(find.text("Subscribe any time. We'll remind you before your free access ends."), findsOneWidget);
+    expect(find.textContaining('day free trial'), findsNothing);
+    expect(find.text('Subscribe any time before the trial ends'), findsNothing);
+  });
+
   testWidgets('is a full page that welcomes the new supplier and names the trial length', (tester) async {
     await _open(tester, daysLeft: 30, act: () async {});
 

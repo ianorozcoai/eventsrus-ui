@@ -16,6 +16,29 @@ SubscriptionStatusResponse _signupTrial({required double daysLeft}) => Subscript
       billingSource: BillingSource.freeGrant,
     );
 
+/// Free access that runs until the first 3 bookings, with the latest-possible end [daysToLimit] days away.
+SubscriptionStatusResponse _goalLive({required int daysToLimit}) => SubscriptionStatusResponse(
+      plan: PlanTier.pro,
+      expiresAt: DateTime.now().add(Duration(days: daysToLimit)),
+      expiringSoon: false,
+      expired: false,
+      billingSource: BillingSource.freeGrant,
+      bookingsGoal: 3,
+    );
+
+/// The 3 bookings are done: the grace countdown is running.
+SubscriptionStatusResponse _goalDone({required int daysLeft}) => SubscriptionStatusResponse(
+      plan: PlanTier.pro,
+      expiresAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      expiringSoon: false,
+      expired: false,
+      inGracePeriod: true,
+      graceEndsAt: DateTime.now().add(Duration(days: daysLeft, hours: -1)),
+      billingSource: BillingSource.freeGrant,
+      bookingsGoal: 3,
+      bookingsGoalReached: true,
+    );
+
 Future<void> _pump(WidgetTester tester, SubscriptionStatusResponse status, {VoidCallback? onChoosePlan}) async {
   await tester.pumpWidget(MaterialApp(
     home: Scaffold(body: SingleChildScrollView(child: TrialStatusCard(status: status, onChoosePlan: onChoosePlan ?? () {}))),
@@ -23,6 +46,30 @@ Future<void> _pump(WidgetTester tester, SubscriptionStatusResponse status, {Void
 }
 
 void main() {
+  testWidgets('free until the first bookings is worded without a day count', (tester) async {
+    await _pump(tester, _goalLive(daysToLimit: 300));
+
+    expect(find.text('Free until your first 3 bookings'), findsOneWidget);
+    expect(find.text('Every supplier tool is unlocked. You can choose a plan any time.'), findsOneWidget);
+    expect(find.textContaining('days left'), findsNothing);
+    expect(find.text('See plans'), findsOneWidget);
+  });
+
+  testWidgets('close to the latest-possible end date it shows the real countdown', (tester) async {
+    await _pump(tester, _goalLive(daysToLimit: 9));
+
+    expect(find.text('Free until your first 3 bookings'), findsNothing);
+    expect(find.textContaining('days left'), findsOneWidget);
+    expect(find.text('Choose a plan'), findsOneWidget);
+  });
+
+  testWidgets('after the first bookings the supplier is congratulated and has a countdown to choose a plan', (tester) async {
+    await _pump(tester, _goalDone(daysLeft: 30));
+
+    expect(find.text('Congratulations on your first 3 bookings!'), findsOneWidget);
+    expect(find.text('Choose a plan within 30 days to keep quotations, chat and bookings working.'), findsOneWidget);
+  });
+
   testWidgets('on the first days a new supplier is told, calmly, that the free period ends and a plan is needed',
       (tester) async {
     await _pump(tester, _signupTrial(daysLeft: 29.5));
