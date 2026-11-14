@@ -200,10 +200,17 @@ class _CurrentPlanCard extends StatelessWidget {
       badgeColor = colorScheme.outline;
     } else if (status.onFreeTrial) {
       final days = status.freeTrialDaysLeft!;
-      badgeText = 'Free trial';
+      badgeText = status.bookingsGoal != null ? 'Free access' : 'Free trial';
       badgeColor = Colors.green;
-      dateLine = 'Your free trial ends on ${_formatDate(status.graceEndsAt!)} '
-          '($days ${days == 1 ? 'day' : 'days'} left). Choose a plan any time to keep your supplier tools.';
+      dateLine = status.bookingsGoalCountdown
+          ? 'Congratulations on your first ${status.bookingsGoal} bookings! Choose a plan by '
+              '${_formatDate(status.graceEndsAt!)} ($days ${days == 1 ? 'day' : 'days'} left) to keep your supplier tools.'
+          : 'Your free ${status.bookingsGoal != null ? 'access' : 'trial'} ends on ${_formatDate(status.graceEndsAt!)} '
+              '($days ${days == 1 ? 'day' : 'days'} left). Choose a plan any time to keep your supplier tools.';
+    } else if (status.freeUntilBookings && !status.expiringSoon) {
+      badgeText = 'Free access';
+      badgeColor = Colors.green;
+      dateLine = 'Free until your first ${status.bookingsGoal} bookings. Choose a plan any time.';
     } else if (status.expired) {
       badgeText = 'Expired';
       badgeColor = colorScheme.error;

@@ -42,12 +42,24 @@ class TrialStatusCard extends StatelessWidget {
     final int? daysLeft = freeDaysLeft(status);
     final urgent = daysLeft != null && daysLeft <= urgentDays;
 
-    final title = trialDays != null
-        ? 'Free trial: ${_days(daysLeft!)} left'
-        : daysLeft != null
-            ? 'Free access: ${_days(daysLeft)} left'
-            : 'Free access';
-    final body = endDate == null
+    // Free until the first N bookings: no day count while the free access is live (the end date is only a
+    // latest-possible limit); a real countdown only after the N bookings, or in the last two weeks before the limit.
+    final goalLive = status.freeUntilBookings && !urgent;
+    final goalDone = status.bookingsGoalCountdown;
+    final title = goalLive
+        ? 'Free until your first ${status.bookingsGoal} bookings'
+        : goalDone
+            ? 'Congratulations on your first ${status.bookingsGoal} bookings!'
+            : trialDays != null
+                ? '${status.bookingsGoal != null ? 'Free access' : 'Free trial'}: ${_days(daysLeft!)} left'
+                : daysLeft != null
+                    ? 'Free access: ${_days(daysLeft)} left'
+                    : 'Free access';
+    final body = goalLive
+        ? 'Every supplier tool is unlocked. You can choose a plan any time.'
+        : goalDone
+            ? 'Choose a plan within ${_days(daysLeft!)} to keep quotations, chat and bookings working.'
+            : endDate == null
         ? 'Your supplier tools are free for now. Choose a plan to keep them after your free period ends.'
         : urgent
             ? 'Your free period ends on ${_formatDate(endDate)}. Choose a plan now to keep quotations, chat, bookings '

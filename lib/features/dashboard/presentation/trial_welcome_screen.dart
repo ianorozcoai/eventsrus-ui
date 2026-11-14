@@ -11,11 +11,12 @@ enum TrialWelcomeChoice { subscribeNow, continueTrial }
 Future<TrialWelcomeChoice> showTrialWelcomeScreen(
   BuildContext context, {
   required int? daysLeft,
+  int? bookingsGoal,
 }) async {
   final choice = await Navigator.of(context).push<TrialWelcomeChoice>(
     MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => TrialWelcomeScreen(daysLeft: daysLeft),
+      builder: (_) => TrialWelcomeScreen(daysLeft: daysLeft, bookingsGoal: bookingsGoal),
     ),
   );
   return choice ?? TrialWelcomeChoice.continueTrial;
@@ -26,15 +27,20 @@ class TrialWelcomeScreen extends StatelessWidget {
 
   final int? daysLeft;
 
-  const TrialWelcomeScreen({super.key, required this.daysLeft});
+  /// When set, the free access runs until the first this-many bookings: worded without a day count.
+  final int? bookingsGoal;
+
+  const TrialWelcomeScreen({super.key, required this.daysLeft, this.bookingsGoal});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dark = theme.brightness == Brightness.dark;
-    final trialLabel = daysLeft == null
-        ? 'Free trial'
-        : '$daysLeft-day free trial';
+    final trialLabel = bookingsGoal != null
+        ? 'Free until your first $bookingsGoal bookings'
+        : daysLeft == null
+            ? 'Free trial'
+            : '$daysLeft-day free trial';
 
     return PopScope(
       canPop: false,
@@ -101,8 +107,10 @@ class TrialWelcomeScreen extends StatelessWidget {
                           const SizedBox(height: 24),
                           const _Point('Every supplier tool is unlocked'),
                           const _Point('No payment is needed today'),
-                          const _Point(
-                            'Subscribe any time before the trial ends',
+                          _Point(
+                            bookingsGoal != null
+                                ? "Subscribe any time. We'll remind you before your free access ends."
+                                : 'Subscribe any time before the trial ends',
                           ),
                         ],
                       ),

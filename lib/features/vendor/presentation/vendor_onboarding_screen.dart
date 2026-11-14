@@ -219,7 +219,7 @@ class _VendorOnboardingScreenState extends State<VendorOnboardingScreen> {
                         textCapitalization: TextCapitalization.characters,
                         decoration: const InputDecoration(
                           labelText: 'Promo Code',
-                          helperText: 'Have a promo code? It may grant a free trial with no card required.',
+                          helperText: 'Have a promo code? Enter it here. Optional.',
                           prefixIcon: Icon(Icons.local_offer_outlined),
                         ),
                       ),

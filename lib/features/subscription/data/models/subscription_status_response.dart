@@ -32,6 +32,10 @@ class SubscriptionStatusResponse {
   final bool showTrialWelcome;
   final bool gcashRejected;
   final String? gcashRejectionReason;
+  // Set while the supplier's free access runs "until the first N bookings" (the default for new suppliers):
+  // N, and whether they have reached it. Null for a normal date-based plan and for older backends.
+  final int? bookingsGoal;
+  final bool bookingsGoalReached;
 
   const SubscriptionStatusResponse({
     this.userId,
@@ -55,6 +59,8 @@ class SubscriptionStatusResponse {
     this.showTrialWelcome = false,
     this.gcashRejected = false,
     this.gcashRejectionReason,
+    this.bookingsGoal,
+    this.bookingsGoalReached = false,
   });
 
   factory SubscriptionStatusResponse.fromJson(Map<String, dynamic> json) =>
@@ -84,12 +90,26 @@ class SubscriptionStatusResponse {
         showTrialWelcome: json['showTrialWelcome'] as bool? ?? false,
         gcashRejected: json['gcashRejected'] as bool? ?? false,
         gcashRejectionReason: json['gcashRejectionReason'] as String?,
+        bookingsGoal: (json['bookingsGoal'] as num?)?.toInt(),
+        bookingsGoalReached: json['bookingsGoalReached'] as bool? ?? false,
       );
 
   /// True for a supplier still on the free period that came with signing up (or a promo code):
   /// the server reports it as the grace period of a free grant. It must be worded as a free
   /// trial, not as an expired subscription - that wording is only for suppliers who stopped paying.
   bool get onFreeTrial => inGracePeriod && graceEndsAt != null && billingSource == BillingSource.freeGrant;
+
+  /// True while the free access is live and runs until the supplier's first [bookingsGoal] bookings.
+  /// It is worded without a day count (the end date is only a latest-possible limit).
+  bool get freeUntilBookings =>
+      bookingsGoal != null &&
+      plan != null &&
+      !expired &&
+      !inGracePeriod &&
+      billingSource == BillingSource.freeGrant;
+
+  /// True during the countdown after the supplier completed their first [bookingsGoal] bookings.
+  bool get bookingsGoalCountdown => onFreeTrial && bookingsGoalReached && bookingsGoal != null;
 
   /// Whole days (rounded up, at least 1 while it still runs) left of the free trial, or null.
   int? get freeTrialDaysLeft {
