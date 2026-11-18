@@ -4,11 +4,13 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/notifications/push_notification_service.dart';
+import '../../../core/platform/store_billing_platform.dart';
 import '../../../core/storage/secure_token_storage.dart';
 import '../../notifications/data/device_token_api.dart';
 import '../../subscription/data/play_billing_gateway.dart';
 import '../data/auth_api.dart';
 import '../data/google_auth_gateway.dart';
+import '../data/models/apple_auth_request.dart';
 import '../data/models/auth_response.dart';
 import '../data/models/google_auth_request.dart';
 import '../data/models/plan_tier.dart';
@@ -111,6 +113,23 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  /// Sign in with Apple (iPhone). Same session handling and error behaviour as [completeLogin].
+  Future<void> completeAppleLogin(AppleAuthRequest request) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _authApi.authenticateWithApple(request);
+      await applyAuthResponse(response);
+    } on ApiException catch (e) {
+      isLoading = false;
+      errorMessage = e.message;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   /// Persists a fresh AuthResponse (from login or becoming a vendor) and
   /// updates in-memory state. Shared so any flow that yields a new token
   /// applies it the same way.
@@ -168,7 +187,7 @@ class AuthController extends ChangeNotifier {
     await _storage.clear();
     await GoogleAuthGateway.instance.signOut();
     // Detach RevenueCat from this account so the next person on the phone starts clean.
-    if (defaultTargetPlatform == TargetPlatform.android) {
+    if (platformUsesStoreBilling()) {
       await RevenueCatPlayBillingGateway.instance.logOut();
     }
     token = null;

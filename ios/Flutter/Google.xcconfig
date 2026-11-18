@@ -1,0 +1,9 @@
+// Google Sign-In on iPhone needs an "iOS" OAuth client from Google Cloud Console (bundle id
+// com.eventsrus.eventsrusui). Both values come from that one client and are PUBLIC (not secrets):
+//   GOOGLE_IOS_CLIENT_ID          = 1234-abcd.apps.googleusercontent.com
+//   GOOGLE_IOS_REVERSED_CLIENT_ID = com.googleusercontent.apps.1234-abcd
+// The CI workflows overwrite this file from the repository variable GOOGLE_IOS_CLIENT_ID
+// (see tool/write_google_xcconfig.sh). Until then the placeholders below keep the project valid
+// and the app shows "Google sign-in is not set up on this iPhone build yet".
+GOOGLE_IOS_CLIENT_ID =
+GOOGLE_IOS_REVERSED_CLIENT_ID = eventsrus-google-not-configured

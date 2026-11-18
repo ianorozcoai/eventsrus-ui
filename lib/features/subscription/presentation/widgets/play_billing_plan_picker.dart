@@ -2,20 +2,17 @@
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/config/app_config.dart';
 import '../../../../core/logging/app_logger.dart';
 import '../../../../core/network/api_exception.dart';
 import '../../data/models/billing_cycle.dart';
 import '../../data/models/billing_source.dart';
 import '../../data/models/subscription_status_response.dart';
 import '../../data/play_billing_gateway.dart';
+import '../../data/store_info.dart';
 import '../../data/subscription_api.dart';
 
 /// Google Play's own page for managing (and cancelling) this app's subscription.
-Uri playManageSubscriptionUri() => Uri.https('play.google.com', '/store/account/subscriptions', {
-      'sku': AppConfig.playSubscriptionId,
-      'package': AppConfig.androidPackageName,
-    });
+Uri playManageSubscriptionUri() => StoreInfo.google.manageSubscriptionUri;
 
 enum _Phase { loading, loadError, alreadySubscribed, notAvailable, activationPending, ready, activating }
 
@@ -27,9 +24,10 @@ Uri playSupportMailUri() => Uri(
       queryParameters: {'subject': 'EventsRUs PRO subscription help'},
     );
 
-/// The Android purchase flow (Google Play Billing through RevenueCat). Shows
-/// only store prices, never PayPal/GCash or any pointer to paying elsewhere
-/// (Google Play Payments policy).
+/// The in-app purchase flow (Google Play Billing on Android, Apple In-App
+/// Purchase on iOS, both through RevenueCat). Shows only store prices, never
+/// PayPal/GCash or any pointer to paying elsewhere (Google Play Payments
+/// policy, App Store guideline 3.1.1).
 ///
 /// Order of events: ask the backend (GET /subscription/status) whether the
 /// supplier already has a plan; only if not, ask the store for the three
@@ -43,11 +41,15 @@ class PlayBillingPlanPicker extends StatefulWidget {
   final Duration activationPollInterval;
   final int activationPollAttempts;
 
+  /// Which store this device buys from. Null means "decide from the platform"; tests pass it.
+  final StoreInfo? store;
+
   const PlayBillingPlanPicker({
     super.key,
     required this.onStatusChanged,
     this.activationPollInterval = const Duration(seconds: 2),
     this.activationPollAttempts = 8,
+    this.store,
   });
 
   @override
@@ -61,6 +63,8 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
   BillingCycle? _selected;
   String? _message;
   bool _busy = false;
+
+  StoreInfo get _store => widget.store ?? StoreInfo.forPlatform();
 
   /// End date of the plan the supplier had before buying, to tell the new purchase apart from it.
   DateTime? _expiryBeforePurchase;
@@ -123,13 +127,15 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
     }
   }
 
-  /// A live plan that charges again by itself (Google Play or PayPal): buying a second one would
+  /// A live plan that charges again by itself (Google Play, App Store or PayPal): buying a second one would
   /// double-charge, so nothing is offered. During the grace period the old plan has lapsed, so a
   /// new purchase is fine.
   bool _renewsByItself(SubscriptionStatusResponse status) =>
       status.plan != null &&
       !status.inGracePeriod &&
-      (status.billingSource == BillingSource.googlePlay || status.billingSource == BillingSource.paypal);
+      (status.billingSource == BillingSource.googlePlay ||
+          status.billingSource == BillingSource.appStore ||
+          status.billingSource == BillingSource.paypal);
 
   Future<void> _buy() async {
     _expiryBeforePurchase = _status?.expiresAt;
@@ -186,11 +192,11 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
         final status = await api.getStatus();
         if (!mounted) return;
         // A supplier paying early already has a plan (promo, GCash), so "has a plan" is not enough:
-        // the new Google Play plan is in once the server reports Google Play with a later end date.
+        // the new store plan is in once the server reports this store with a later end date.
         final before = _expiryBeforePurchase;
         final activated = status.plan != null &&
             (before == null ||
-                (status.billingSource == BillingSource.googlePlay &&
+                (status.billingSource == _store.billingSource &&
                     (status.expiresAt == null || status.expiresAt!.isAfter(before))));
         if (activated) {
           _status = status;
@@ -214,7 +220,7 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
   }
 
   Future<void> _manage() async {
-    await launchUrl(playManageSubscriptionUri(), mode: LaunchMode.externalApplication);
+    await launchUrl(_store.manageSubscriptionUri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _contactSupport() async {
@@ -230,10 +236,10 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
           child: Center(child: CircularProgressIndicator(key: Key('play-loading'))),
         );
       case _Phase.activating:
-        return const _InfoCard(
-          key: Key('play-activating'),
+        return _InfoCard(
+          key: const Key('play-activating'),
           title: 'Activating your plan',
-          body: 'Thank you! We are confirming your purchase with Google Play. This usually takes a few seconds.',
+          body: 'Thank you! We are confirming your purchase with ${_store.name}. This usually takes a few seconds.',
           showProgress: true,
         );
       case _Phase.loadError:
@@ -247,12 +253,14 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
         return _InfoCard(
           key: const Key('play-already-subscribed'),
           title: 'You already have an active plan',
-          body: _status?.billingSource == BillingSource.googlePlay
-              ? 'Your PRO plan is billed through Google Play. Subscriptions bought in Google Play are '
-                  'managed and cancelled in Google Play.'
+          body: _billedByStore
+              ? 'Your PRO plan is billed through ${_status!.billingSource!.label}. Subscriptions bought in '
+                  '${_status!.billingSource!.label} are managed and cancelled in ${_status!.billingSource!.label}.'
               : 'Your PRO plan is active, so there is nothing to buy here.',
           actions: [
-            if (_status?.billingSource == BillingSource.googlePlay)
+            // Only this device's own store has a page to open; a plan bought in the other store is
+            // managed there.
+            if (_status?.billingSource == _store.billingSource)
               OutlinedButton(
                 key: const Key('play-manage-subscription'),
                 onPressed: _manage,
@@ -261,13 +269,14 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
           ],
         );
       case _Phase.notAvailable:
-        // Plans could not be loaded from Google Play (inactive plans, no Play services, no
+        // Plans could not be loaded from the store (inactive plans, no Play services, no
         // connection, store down). The supplier must always have something to do next.
         return _InfoCard(
           key: const Key('play-not-available'),
           title: "We couldn't load the plans",
-          body: 'We could not load the subscription plans from Google Play right now. '
-              'Please check your internet connection and that Google Play is up to date, then try again. '
+          body: 'We could not load the subscription plans from ${_store.name} right now. '
+              'Please check your internet connection${_store.isApple ? '' : ' and that Google Play is up to date'}, '
+              'then try again. '
               'If it keeps happening, contact $_supportEmail and we will help you.',
           actions: [
             FilledButton(
@@ -305,6 +314,13 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
       case _Phase.ready:
         return _buildReady(context);
     }
+  }
+
+  bool get _billedByStore =>
+      _status?.billingSource == BillingSource.googlePlay || _status?.billingSource == BillingSource.appStore;
+
+  Future<void> _openLegal(String path) async {
+    await launchUrl(Uri.https('eventsrus.app', path), mode: LaunchMode.externalApplication);
   }
 
   Widget _buildReady(BuildContext context) {
@@ -367,7 +383,7 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
           onPressed: _busy ? null : _buy,
           child: _busy
               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Subscribe with Google Play'),
+              : Text(_store.isApple ? 'Subscribe' : 'Subscribe with Google Play'),
         ),
         const SizedBox(height: 8),
         TextButton(
@@ -382,10 +398,33 @@ class _PlayBillingPlanPickerState extends State<PlayBillingPlanPicker> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Renews automatically until cancelled. Subscriptions bought in Google Play are cancelled in '
-          'Google Play (Manage subscription).',
+          _store.isApple
+              // App Store guideline 3.1.2: price/length are on the cards above; state the renewal
+              // terms and link Terms + Privacy Policy next to the Subscribe button.
+              ? 'Payment is charged to your Apple ID account when you confirm the purchase. The '
+                  'subscription renews automatically unless it is cancelled at least 24 hours before the '
+                  'end of the current period. Manage or cancel it in your App Store account settings '
+                  '(Manage subscription).'
+              : 'Renews automatically until cancelled. Subscriptions bought in Google Play are cancelled in '
+                  'Google Play (Manage subscription).',
           style: Theme.of(context).textTheme.bodySmall,
         ),
+        if (_store.isApple)
+          Wrap(
+            alignment: WrapAlignment.center,
+            children: [
+              TextButton(
+                key: const Key('play-terms-link'),
+                onPressed: () => _openLegal('/terms'),
+                child: const Text('Terms of Use'),
+              ),
+              TextButton(
+                key: const Key('play-privacy-link'),
+                onPressed: () => _openLegal('/privacy'),
+                child: const Text('Privacy Policy'),
+              ),
+            ],
+          ),
       ],
     );
   }

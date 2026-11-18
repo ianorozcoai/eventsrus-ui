@@ -1,4 +1,4 @@
-﻿name: eventsrus_ui
+name: eventsrus_ui
 description: "EventsRUs mobile client (Android/iOS)"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -48,6 +48,7 @@ dependencies:
   flutter_web_auth_2: ^5.1.0
   crypto: ^3.0.7
   purchases_flutter: ^10.17.0
+  sign_in_with_apple: ^8.2.0
 
 dev_dependencies:
   flutter_test:
@@ -62,13 +63,14 @@ dev_dependencies:
 
   flutter_launcher_icons: ^0.14.4
 
-# Android app launcher icon, generated from the same icon.png used for the
-# web favicon (see eventsrus-web/.../assets/images/icon.svg). iOS is omitted
-# - this Flutter project has no ios/ platform folder yet (Android-first, see
-# the mobile build plan). Regenerate with: dart run flutter_launcher_icons
+# App launcher icons (Android + iOS), generated from the same icon.png used for
+# the web favicon (see eventsrus-web/.../assets/images/icon.svg). The App Store
+# rejects icons with transparency, hence remove_alpha_ios.
+# Regenerate with: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: true
-  ios: false
+  ios: true
+  remove_alpha_ios: true
   image_path: "assets/images/icon.png"
 
 # For information on the generic Dart part of this file, see the

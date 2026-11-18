@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/dio_error_mapper.dart';
+import 'models/apple_auth_request.dart';
 import 'models/auth_response.dart';
 import 'models/google_auth_request.dart';
 
@@ -14,6 +15,18 @@ class AuthApi {
     try {
       final response = await _apiClient.dio.post(
         '/api/v1/auth/google',
+        data: request.toJson(),
+      );
+      return AuthResponse.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw mapDioError(e);
+    }
+  }
+
+  Future<AuthResponse> authenticateWithApple(AppleAuthRequest request) async {
+    try {
+      final response = await _apiClient.dio.post(
+        '/api/v1/auth/apple',
         data: request.toJson(),
       );
       return AuthResponse.fromJson(response.data as Map<String, dynamic>);
