@@ -32,6 +32,7 @@ enum BusinessType {
   liveEventPaintersSketchArtists,
   specialEffects,
   floralServices,
+  coffeeAndBeverageBars,
 }
 
 extension BusinessTypeApi on BusinessType {
@@ -97,6 +98,8 @@ extension BusinessTypeApi on BusinessType {
         return 'SPECIAL_EFFECTS';
       case BusinessType.floralServices:
         return 'FLORAL_SERVICES';
+      case BusinessType.coffeeAndBeverageBars:
+        return 'COFFEE_AND_BEVERAGE_BARS';
     }
   }
 
@@ -162,6 +165,8 @@ extension BusinessTypeApi on BusinessType {
         return 'Special Effects';
       case BusinessType.floralServices:
         return 'Floral Services';
+      case BusinessType.coffeeAndBeverageBars:
+        return 'Coffee & Beverage Bars';
     }
   }
 
@@ -227,6 +232,8 @@ extension BusinessTypeApi on BusinessType {
         return BusinessType.specialEffects;
       case 'FLORAL_SERVICES':
         return BusinessType.floralServices;
+      case 'COFFEE_AND_BEVERAGE_BARS':
+        return BusinessType.coffeeAndBeverageBars;
       default:
         throw FormatException('Unknown business type: $value');
     }

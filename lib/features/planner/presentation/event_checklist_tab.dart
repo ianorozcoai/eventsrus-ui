@@ -51,7 +51,7 @@ class _EventChecklistTabState extends State<EventChecklistTab> {
     }
     final ordered = <String, List<EventChecklistItem>>{};
     for (final type in byCategory.keys.toList()
-      ..sort((a, b) => BusinessTypeApi.fromApi(a).label.compareTo(BusinessTypeApi.fromApi(b).label))) {
+      ..sort((a, b) => BusinessTypeApi.labelOrRaw(a).compareTo(BusinessTypeApi.labelOrRaw(b)))) {
       ordered[type] = byCategory[type]!;
     }
     return ordered;
@@ -163,7 +163,7 @@ class _EventChecklistTabState extends State<EventChecklistTab> {
               child: Row(
                 children: [
                   Text(
-                    BusinessTypeApi.fromApi(entry.key).label,
+                    BusinessTypeApi.labelOrRaw(entry.key),
                     style: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   if (_bookmarkedCountFor(entry.key) > 0) ...[
